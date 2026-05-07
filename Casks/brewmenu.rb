@@ -1,6 +1,6 @@
 cask "brewmenu" do
   version "0.6.0"
-  sha256 "705490db8f905431203ea01d8bf29ed6850e2464182f71446673cb81b192c986"
+  sha256 "1a73de9f9c10921c1aabf33d564b29c1fd59be1f16233f94672d8d6f883125b4"
 
   url "https://github.com/xscit/BrewMenu/releases/download/#{version}/BrewMenu.zip"
   name "BrewMenu"
