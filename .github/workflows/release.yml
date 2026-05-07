@@ -1,0 +1,71 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+      - '[0-9]*'
+  workflow_dispatch:
+
+jobs:
+  release:
+    runs-on: [self-hosted, macOS]
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build
+        run: |
+          xcodebuild -project BrewMenu.xcodeproj \
+            -scheme BrewMenu \
+            -configuration Release \
+            -derivedDataPath build \
+            build
+          ditto -c -k --keepParent build/Build/Products/Release/BrewMenu.app BrewMenu.zip
+
+      - name: Extract release notes from CHANGELOG
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          awk -v ver="$VERSION" '
+            /^## \[/ {
+              if (found) exit
+              if (index($0, "[" ver "]")) { found=1; next }
+            }
+            found { print }
+          ' CHANGELOG.md > release_notes.md
+          if [ ! -s release_notes.md ]; then
+            echo "Release $GITHUB_REF_NAME" > release_notes.md
+          fi
+
+      - name: Update Homebrew cask on main
+        run: |
+          SHA256=$(shasum -a 256 BrewMenu.zip | awk '{print $1}')
+          git fetch origin main
+          git checkout main
+          sed -i '' "s/version \".*\"/version \"$GITHUB_REF_NAME\"/" Casks/brewmenu.rb
+          sed -i '' "s/sha256 .*/sha256 \"$SHA256\"/" Casks/brewmenu.rb
+          if [ -n "$(git status --porcelain Casks/brewmenu.rb)" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add Casks/brewmenu.rb
+            git commit -m "chore: update cask to $GITHUB_REF_NAME [skip ci]"
+            git push origin main
+          fi
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PRERELEASE=""
+          if echo "$GITHUB_REF_NAME" | grep -iqE "rc|alpha|beta|dev"; then
+            PRERELEASE="--prerelease"
+          fi
+          gh release create "$GITHUB_REF_NAME" \
+            --title "$GITHUB_REF_NAME" \
+            --notes-file release_notes.md \
+            $PRERELEASE \
+            BrewMenu.zip

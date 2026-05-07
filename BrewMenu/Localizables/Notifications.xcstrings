@@ -1,0 +1,281 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "action_authorize" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Authorize"
+          }
+        }
+      }
+    },
+    "body_auth_failed_retry %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "❌ Incorrect password for [%@]. Please try again."
+          }
+        }
+      }
+    },
+    "body_auth_required %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "🔐 BrewMenu needs your password to update: %@. Open menu to authorize."
+          }
+        }
+      }
+    },
+    "body_auth_timeout %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Authorization timed out for [%@]. It has been skipped."
+          }
+        }
+      }
+    },
+    "body_brew_ready" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "✅ All packages are current."
+          }
+        }
+      }
+    },
+    "body_transient_auth_failed %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "⚠️ Identity Authentication Failed for [%@]"
+          }
+        }
+      }
+    },
+    "body_transient_cancelled %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "⏭️ %@"
+          }
+        }
+      }
+    },
+    "body_transient_error %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "❌ %@"
+          }
+        }
+      }
+    },
+    "body_transient_warning %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "⚠️ %@"
+          }
+        }
+      }
+    },
+    "body_updates_found %lld %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "📦 %lld packages can be updated: %@"
+          }
+        }
+      }
+    },
+    "body_upgrade_failed %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "❌ Failed to upgrade: %@"
+          }
+        }
+      }
+    },
+    "line_package_external %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ℹ️ %@ (Already current)"
+          }
+        }
+      }
+    },
+    "line_package_failed %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "❌ Failed: %@"
+          }
+        }
+      }
+    },
+    "line_package_skipped %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "⏭️ %@ (Skipped)"
+          }
+        }
+      }
+    },
+    "line_package_success %@ %@ %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "✅ %@ (%@ → %@)"
+          }
+        }
+      }
+    },
+    "title_auth_failed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Authentication Failed"
+          }
+        }
+      }
+    },
+    "title_auth_required" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Authorization Required"
+          }
+        }
+      }
+    },
+    "title_auth_timeout" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Authorization Timeout"
+          }
+        }
+      }
+    },
+    "title_brew_ready" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Brew Ready"
+          }
+        }
+      }
+    },
+    "title_brew_updated" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Brew Updated"
+          }
+        }
+      }
+    },
+    "title_command_failed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Command Failed"
+          }
+        }
+      }
+    },
+    "title_operation_cancelled" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Operation Cancelled"
+          }
+        }
+      }
+    },
+    "title_partial_upgrade" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Partial Upgrade"
+          }
+        }
+      }
+    },
+    "title_updates_available" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Updates Available"
+          }
+        }
+      }
+    },
+    "title_upgrade_failed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Upgrade Failed"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}
