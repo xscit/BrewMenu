@@ -20,7 +20,7 @@ A native macOS menu bar app for [Homebrew](https://brew.sh). Checks for outdated
 - **Greedy modes** — supports `--greedy`, `--greedy-auto-updates`, and `--greedy-latest` for casks that auto-update themselves.
 - **Optional auto-cleanup** — runs `brew cleanup --prune=all` after a successful batch.
 - **Cancellable at any point** — `Esc` aborts the active scan, upgrade, or pending authorization. Running `brew` processes (and their `curl` / `git` children) are sent `SIGINT`, then `SIGKILL` after 5 seconds if they refuse to exit.
-- **Localized notifications** — English and Simplified Chinese. Strings live in `BrewMenu/Localizables/*.xcstrings`.
+- **Notifications** — English only. Strings live in `BrewMenu/Localizables/*.xcstrings`.
 
 ## Authorization model
 
@@ -28,7 +28,7 @@ This is the part that most apps in this space get wrong, so it's worth describin
 
 When `brew upgrade` hits a cask that requires `sudo`, BrewMenu does **not** run brew as root. Instead:
 
-1. `brew upgrade` is invoked with `sudo --askpass /path/to/BrewMenuAskPass`.
+1. `brew upgrade` is invoked with the `SUDO_ASKPASS` environment variable set to `/path/to/BrewMenuAskPass`.
 2. **BrewMenuAskPass** is a tiny separate executable. It launches as a subprocess, posts `helperStarted` to `DistributedNotificationCenter` with its own PID, and blocks in `CFRunLoopRun()`.
 3. The main app receives `helperStarted`, validates the PID lineage via `sysctl` (must be: AskPass → sudo → brew), transitions to the `authorizing` state, and posts a system notification.
 4. When you tap the notification action, the main app posts a PID-specific `trigger` notification back to AskPass.
@@ -65,7 +65,7 @@ There is no SwiftPM manifest and no external dependencies — it's a plain two-t
 ## Requirements
 
 - macOS 14.0 or later
-- Homebrew installed at `/opt/homebrew` (Apple Silicon) or `/usr/local` (Intel)
+- Homebrew installed at `/opt/homebrew` (Apple Silicon) or `/usr/local` (Intel - untested)
 - Xcode 16+ to build
 
 ## Architecture
