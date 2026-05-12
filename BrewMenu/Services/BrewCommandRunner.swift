@@ -60,7 +60,7 @@ private final class ActiveProcesses: @unchecked Sendable {
             self.lock.lock()
             let remaining = self.pids.intersection(snapshot)
             self.lock.unlock()
-            
+
             guard !remaining.isEmpty else { return }
             Log.brew.notice("Escalating to SIGKILL for \(remaining.count) process group(s) that ignored SIGINT.")
             for pid in remaining {
@@ -86,7 +86,7 @@ final class RealBrewCommandRunner: BrewCommandRunner, @unchecked Sendable {
     func execute(_ command: BrewCommand) async -> (stdout: String, stderr: String, exitCode: Int32) {
         let outPipe = Pipe()
         let errPipe = Pipe()
-        
+
         let ioQueue = DispatchQueue(label: "com.whoami.brewmenu.io")
         let outBuffer = DataBuffer()
         let errBuffer = DataBuffer()
@@ -104,11 +104,11 @@ final class RealBrewCommandRunner: BrewCommandRunner, @unchecked Sendable {
 
         return await withCheckedContinuation { continuation in
             let resumed = ResumeGuard()
-            
+
             var pid: pid_t = 0
             let executablePath = command.executable.path
             let argvStrings = [executablePath] + command.args + command.packages
-            
+
             // Environment setup
             var env = ProcessInfo.processInfo.environment
             let binURL = command.executable.deletingLastPathComponent()
@@ -118,14 +118,14 @@ final class RealBrewCommandRunner: BrewCommandRunner, @unchecked Sendable {
             env["HOMEBREW_NO_COLOR"] = "1"
             env["HOMEBREW_NO_EMOJI"] = "1"
             env.merge(command.additionalEnvironment) { _, new in new }
-            
+
             let envStrings = env.map { "\($0.key)=\($0.value)" }
-            
+
             // POSIX spawn setup
             var fileActions: posix_spawn_file_actions_t?
             posix_spawn_file_actions_init(&fileActions)
             defer { posix_spawn_file_actions_destroy(&fileActions) }
-            
+
             posix_spawn_file_actions_addopen(&fileActions, STDIN_FILENO, "/dev/null", O_RDONLY, 0)
             posix_spawn_file_actions_adddup2(&fileActions, outPipe.fileHandleForWriting.fileDescriptor, STDOUT_FILENO)
             posix_spawn_file_actions_adddup2(&fileActions, errPipe.fileHandleForWriting.fileDescriptor, STDERR_FILENO)
@@ -139,10 +139,10 @@ final class RealBrewCommandRunner: BrewCommandRunner, @unchecked Sendable {
             var attr: posix_spawnattr_t?
             posix_spawnattr_init(&attr)
             defer { posix_spawnattr_destroy(&attr) }
-            
+
             posix_spawnattr_setflags(&attr, Int16(POSIX_SPAWN_SETPGROUP))
             posix_spawnattr_setpgroup(&attr, 0)
-            
+
             let status = withCStringArray(argvStrings) { cArgv in
                 withCStringArray(envStrings) { cEnvp in
                     executablePath.withCString { cPath in
@@ -150,7 +150,7 @@ final class RealBrewCommandRunner: BrewCommandRunner, @unchecked Sendable {
                     }
                 }
             }
-            
+
             if status != 0 {
                 Log.brew.error("posix_spawn failed: \(status)")
                 outPipe.fileHandleForReading.readabilityHandler = nil
@@ -164,10 +164,10 @@ final class RealBrewCommandRunner: BrewCommandRunner, @unchecked Sendable {
             // pipe remains open even after the child dies.
             try? outPipe.fileHandleForWriting.close()
             try? errPipe.fileHandleForWriting.close()
-            
+
             registry.add(pid)
             command.onPID?(pid)
-            
+
             DispatchQueue.global(qos: .utility).async {
                 var waitStatus: Int32 = 0
                 waitpid(pid, &waitStatus, 0)

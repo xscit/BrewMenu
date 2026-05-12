@@ -1,4 +1,3 @@
-import Foundation
 import os
 
 /// Upgrade engine: manages sequential upgrade queue, cancellation logic, and result aggregation.
@@ -10,7 +9,7 @@ final class UpgradeEngine {
     private let notificationService: NotificationServiceProtocol
     private var isRunning = false
     private var isCancelled = false
-    
+
     init(
         coordinator: BrewStatusManager,
         sudoMonitor: SudoMonitor,
@@ -22,7 +21,7 @@ final class UpgradeEngine {
         self.brewService = brewService ?? BrewService.shared
         self.notificationService = notificationService ?? NotificationService.shared
     }
-    
+
     /// Abort any in-progress upgrade: stops the loop and cleans up sudo monitoring.
     /// Callers are responsible for calling brewService.terminateAll() to kill processes.
     func cancel() {
@@ -38,40 +37,40 @@ final class UpgradeEngine {
         isRunning = true
         isCancelled = false
         defer { isRunning = false }
-        
+
         let greedyArgs = config.greedyMode.args
         let authTimeout = config.authTimeout
-        
+
         let beforeList = packages
         coordinator.transition(to: .updating)
         coordinator.setErrorMessage(nil)
-        
+
         var overallSuccess = true
         var skippedNames: [String] = []
         var externalSuccessNames: [String] = []
         var failedErrors: [String: BrewError] = [:]
         Log.upgrade.notice("Starting sequential upgrade for \(packages.count) packages.")
-        
+
         sudoMonitor.start()
-        
+
         for pkg in packages {
             guard !isCancelled else { break }
             coordinator.setActiveUpgrade(pkg.name)
-            
+
             // Pre-check: skip packages already upgraded externally (e.g., via Terminal)
             if await !brewService.checkIfPackageIsStillOutdated(name: pkg.name, greedyArgs: greedyArgs) {
                 Log.upgrade.info("[\(pkg.name)] is already up to date. Skipping.")
                 externalSuccessNames.append(pkg.name)
                 continue
             }
-            
+
             Log.upgrade.notice("Upgrading [\(pkg.name)]...")
             let result = await brewService.upgrade(packages: [pkg], greedyArgs: greedyArgs, authTimeout: authTimeout, onPID: { pid in
                 Task { @MainActor in
                     self.sudoMonitor.registerSession(pid: pid)
                 }
             })
-            
+
             switch result {
             case .success:
                 Log.upgrade.notice("[\(pkg.name)] upgraded successfully.")
@@ -87,7 +86,7 @@ final class UpgradeEngine {
                 }
             }
         }
-        
+
         sudoMonitor.stop()
         coordinator.setActiveUpgrade(nil)
 
@@ -116,10 +115,10 @@ final class UpgradeEngine {
             config: config
         )
     }
-    
+
     private func finishUpgrade(beforeList: [BrewPackage], overallSuccess: Bool, skippedNames: [String], externalSuccessNames: [String], failedErrors: [String: BrewError], config: BrewConfiguration) async {
         guard let coordinator = coordinator else { return }
-        
+
         let savedError = coordinator.errorMessage
 
         if config.cleanupMode != .disabled {
@@ -160,7 +159,7 @@ final class UpgradeEngine {
             )
         }
     }
-    
+
     private func calculateUpgraded(before: [BrewPackage], after: [BrewPackage]) -> [BrewPackage] {
         let afterNames = Set(after.map { $0.name })
         return before.filter { !afterNames.contains($0.name) }

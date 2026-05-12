@@ -96,11 +96,11 @@ final class AppCoordinator: BrewMenuCoordinating {
     func check(mode: ScanMode = .manual) async {
         defer { isCancelling = false }
         guard await runScan(mode: mode) else { return }
-        
+
         // Notify user about found updates (skip for silent refreshes)
         guard mode != .refresh, !outdatedPackages.isEmpty else { return }
         notificationService.showUpdatesFound(packages: outdatedPackages)
-        
+
         if settings.isAutoUpgradeEnabled {
             await upgrade()
         }

@@ -11,6 +11,7 @@ protocol BrewStatusManager: AnyObject {
     var outdatedPackages: [BrewPackage] { get }
     var activeUpgradePackageName: String? { get }
     var errorMessage: String? { get }
+    var lastCheckDate: Date? { get }
 
     func transition(to status: AppStatus)
     func setActiveUpgrade(_ packageName: String?)
@@ -30,8 +31,6 @@ extension BrewStatusManager {
 /// import) while keeping @Observable body-invalidation intact at the call site.
 @MainActor
 protocol BrewMenuCoordinating: BrewStatusManager, Observable {
-    var lastCheckDate: Date? { get }
-
     func upgrade() async
     func upgrade(package: BrewPackage) async
     func cancel()

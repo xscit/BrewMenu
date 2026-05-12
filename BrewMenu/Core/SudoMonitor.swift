@@ -1,5 +1,4 @@
 import Foundation
-import AppKit
 import Darwin
 import os
 
@@ -16,14 +15,14 @@ final class SudoMonitor {
     private var currentSessionPID: Int32?
     private var observers: [ObserverWrapper] = []
     private var timeoutTask: Task<Void, Never>?
-    
+
     /// Wrapper that auto-removes the observer from DistributedNotificationCenter on dealloc.
     private final class ObserverWrapper {
         let observer: NSObjectProtocol
         init(_ observer: NSObjectProtocol) { self.observer = observer }
         deinit { DistributedNotificationCenter.default().removeObserver(observer) }
     }
-    
+
     init(
         coordinator: BrewStatusManager,
         timeoutProvider: @escaping () -> Int = { 300 },
@@ -35,23 +34,23 @@ final class SudoMonitor {
         self.notificationService = notificationService ?? NotificationService.shared
         self.ppidProvider = ppidProvider
     }
-    
+
     /// Register the PID of a new upgrade session.
     func registerSession(pid: Int32) {
         self.currentSessionPID = pid
         self.notifiedPIDs.removeAll()
     }
-    
+
     /// Start monitoring (listen for distributed notifications).
     func start() {
         stop()
-        
+
         let center = DistributedNotificationCenter.default()
-        
+
         // Listen for helper-started signal
         let startedObs = center.addObserver(forName: BrewMenuNotification.helperStarted, object: nil, queue: .main) { [weak self] note in
             guard let self = self, let pidStr = note.object as? String, let pid = Int32(pidStr) else { return }
-            
+
             Task { @MainActor in
                 // Lineage check: verify the helper is a descendant of the current brew process
                 // Chain: Helper(Z) -> sudo(Y) -> brew(X)
@@ -60,26 +59,26 @@ final class SudoMonitor {
                 } else {
                     return
                 }
-                
+
                 self.activePIDs.insert(pid)
                 await self.handleMonitorResult()
             }
         }
-        
+
         // Listen for helper-finished signal
         let finishedObs = center.addObserver(forName: BrewMenuNotification.helperFinished, object: nil, queue: .main) { [weak self] note in
             guard let self = self, let pidStr = note.object as? String, let pid = Int32(pidStr) else { return }
-            
+
             Task { @MainActor in
                 // No lineage re-check needed — the process may have already exited
                 self.activePIDs.remove(pid)
                 await self.handleMonitorResult()
             }
         }
-        
+
         observers = [ObserverWrapper(startedObs), ObserverWrapper(finishedObs)]
     }
-    
+
     /// Stop monitoring and clear all state.
     func stop() {
         timeoutTask?.cancel()
@@ -89,14 +88,14 @@ final class SudoMonitor {
         notifiedPIDs.removeAll()
         currentSessionPID = nil
     }
-    
+
     /// Broadcast a trigger to all waiting AskPass helpers via DistributedNotification.
     func triggerAuthorizationUI() {
         timeoutTask?.cancel()
         timeoutTask = nil
         let name = coordinator?.activeUpgradePackageName ?? ""
         Log.auth.notice("User triggered Sudo AskPass UI for [\(name)].")
-        
+
         for pid in activePIDs {
             DistributedNotificationCenter.default().postNotificationName(
                 BrewMenuNotification.triggerName(for: pid),
@@ -106,29 +105,29 @@ final class SudoMonitor {
             )
         }
     }
-    
+
     private func handleMonitorResult() async {
         guard let coordinator = coordinator else { return }
-        
+
         // New PIDs detected — notify user
         let newPIDs = activePIDs.subtracting(notifiedPIDs)
         if !newPIDs.isEmpty {
             let isRetry = !notifiedPIDs.isEmpty
             coordinator.transition(to: .authorizing)
-            
+
             let name = coordinator.activeUpgradePackageName ?? "a package"
             if isRetry {
                 Log.auth.notice("Sudo authorization retry requested for [\(name)].")
             } else {
                 Log.auth.notice("Sudo authorization required for [\(name)].")
             }
-            
+
             notificationService.showAuthRequired(packageNames: [name], isRetry: isRetry)
-            
+
             notifiedPIDs.formUnion(newPIDs)
             startTimeoutTask()
         }
-        
+
         // All helpers finished — return to updating state
         if activePIDs.isEmpty && coordinator.status == .authorizing {
             timeoutTask?.cancel()
@@ -136,15 +135,15 @@ final class SudoMonitor {
             coordinator.transition(to: .updating)
         }
     }
-    
+
     /// Broadcast a cancel signal to all waiting AskPass helpers.
     func cancelAuthorizationUI() {
         let name = coordinator?.activeUpgradePackageName ?? "a package"
         let seconds = timeoutProvider()
         Log.auth.notice("Sudo authorization timed out (exceeded \(seconds)s) for [\(name)]. Cancelling AskPass helpers.")
-        
+
         notificationService.showAuthTimeout(packageName: name)
-        
+
         for pid in activePIDs {
             DistributedNotificationCenter.default().postNotificationName(
                 BrewMenuNotification.cancelName(for: pid),
@@ -169,7 +168,7 @@ final class SudoMonitor {
             }
         }
     }
-    
+
     // MARK: - Testing
 
     /// Directly invoke the helperStarted handling logic without going through

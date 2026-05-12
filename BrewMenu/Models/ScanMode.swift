@@ -1,5 +1,3 @@
-import Foundation
-
 /// Scan trigger mode.
 enum ScanMode: String {
     case initial = "Initial"

@@ -2,7 +2,7 @@
 
 A native macOS menu bar app for [Homebrew](https://brew.sh). Checks for outdated formulae and casks on a schedule, runs upgrades sequentially, and asks for your password only when a cask actually needs `sudo` — no daemon, no persistent root privileges.
 
-> **Status:** early release (current version: `0.6.0`). Used daily by the author; expect rough edges and occasional breaking changes until `1.0`.
+> **Status:** early release (current version: `0.6.1`). Used daily by the author; expect rough edges and occasional breaking changes until `1.0`.
 
 ---
 
@@ -19,7 +19,7 @@ A native macOS menu bar app for [Homebrew](https://brew.sh). Checks for outdated
 - **Pre-upgrade skip** — if a package was already upgraded externally (e.g., from Terminal), it's detected and skipped, not re-run.
 - **Greedy modes** — supports `--greedy`, `--greedy-auto-updates`, and `--greedy-latest` for casks that auto-update themselves.
 - **Optional auto-cleanup** — runs `brew cleanup --prune=all` after a successful batch.
-- **Cancellable at any point** — `Esc` aborts the active scan, upgrade, or pending authorization. Running `brew` processes (and their `curl` / `git` children) are sent `SIGINT`, then `SIGKILL` after 5 seconds if they refuse to exit.
+- **Cancellable at any point** — `⌘ .` aborts the active scan, upgrade, or pending authorization. Running `brew` processes (and their `curl` / `git` children) are sent `SIGINT`, then `SIGKILL` after 5 seconds if they refuse to exit.
 - **Notifications** — English only. Strings live in `BrewMenu/Localizables/*.xcstrings`.
 
 ## Authorization model

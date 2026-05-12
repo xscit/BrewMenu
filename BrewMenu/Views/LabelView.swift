@@ -3,7 +3,7 @@ import SwiftUI
 /// Menu bar icon: dynamically switches based on current app status.
 struct LabelView: View {
     let status: AppStatus
-    
+
     var body: some View {
         switch status {
         case .idle:

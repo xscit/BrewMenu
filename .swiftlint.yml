@@ -1,0 +1,18 @@
+analyzer_rules:
+  - unused_declaration
+  - unused_import
+
+function_parameter_count:
+  warning: 6
+
+file_length:
+  warning: 2000
+
+line_length:
+  warning: 1000
+
+function_body_length:
+  warning: 400
+
+large_tuple:
+  warning: 3

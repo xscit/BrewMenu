@@ -36,8 +36,8 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate, Not
     private enum RequestID {
         static let updatesFound = "UPDATES_FOUND"
         static let authTrigger  = "AUTH_TRIGGER"
-        static func authRetry()  -> String { "AUTH_RETRY_\(UUID().uuidString)" }
-        static func error()      -> String { "ERROR_\(UUID().uuidString)" }
+        static func authRetry() -> String { "AUTH_RETRY_\(UUID().uuidString)" }
+        static func error() -> String { "ERROR_\(UUID().uuidString)" }
     }
 
     private let center = UNUserNotificationCenter.current()
@@ -177,7 +177,7 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate, Not
         content.title = String(localized: "title_auth_timeout", table: "Notifications")
         content.body = String(localized: "body_auth_timeout \(packageName)", table: "Notifications")
         content.sound = .default
-        
+
         let request = UNNotificationRequest(identifier: RequestID.error(), content: content, trigger: nil)
         center.add(request)
     }

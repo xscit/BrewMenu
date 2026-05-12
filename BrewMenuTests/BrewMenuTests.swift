@@ -17,9 +17,9 @@ private func outdatedJSON(
     func encode(_ name: String, _ old: String, _ new: String) -> String {
         "{\"name\":\"\(name)\",\"installed_versions\":[\"\(old)\"],\"current_version\":\"\(new)\"}"
     }
-    let f = formulae.map { encode($0.0, $0.1, $0.2) }.joined(separator: ",")
-    let c = casks.map { encode($0.0, $0.1, $0.2) }.joined(separator: ",")
-    return "{\"formulae\":[\(f)],\"casks\":[\(c)]}"
+    let formulaeJson = formulae.map { encode($0.0, $0.1, $0.2) }.joined(separator: ",")
+    let casksJson = casks.map { encode($0.0, $0.1, $0.2) }.joined(separator: ",")
+    return "{\"formulae\":[\(formulaeJson)],\"casks\":[\(casksJson)]}"
 }
 
 private struct MockConfig: BrewConfiguration, Sendable {
@@ -45,8 +45,8 @@ private final class MockBrewCommandRunner: BrewCommandRunner, @unchecked Sendabl
         lock.withLock {
             executedCommands.append(command)
             guard !queue.isEmpty else { return ("", "", 0) }
-            let r = queue.removeFirst()
-            return (stdout: r.0, stderr: r.1, exitCode: r.2)
+            let result = queue.removeFirst()
+            return (stdout: result.0, stderr: result.1, exitCode: result.2)
         }
     }
 
@@ -78,8 +78,9 @@ private final class MockSettingsStore: SettingsStore, @unchecked Sendable {
 private final class MockCoordinator: BrewStatusManager {
     var status: AppStatus = .idle
     var outdatedPackages: [BrewPackage] = []
-    var activeUpgradePackageName: String? = nil
-    var errorMessage: String? = nil
+    var activeUpgradePackageName: String?
+    var errorMessage: String?
+    var lastCheckDate: Date?
     var transitionHistory: [AppStatus] = []
     var checkModes: [ScanMode] = []
     /// 每次 check() 从队列取一批，模拟真实 refresh 结果；队列耗尽则保持当前值不变
@@ -449,24 +450,24 @@ struct AppSettingsTests {
 
     // 预设模式直接用 rawValue（秒数），无需换算
     @Test func currentIntervalSecondsForPreset() {
-        let s = AppSettings(store: MockSettingsStore())
-        s.checkInterval = .sixHours
-        #expect(s.currentIntervalSeconds == Double(CheckInterval.sixHours.rawValue))
+        let settings = AppSettings(store: MockSettingsStore())
+        settings.checkInterval = .sixHours
+        #expect(settings.currentIntervalSeconds == Double(CheckInterval.sixHours.rawValue))
     }
 
     // custom 模式读取 customCheckInterval 而非 rawValue
     @Test func currentIntervalSecondsForCustom() {
-        let s = AppSettings(store: MockSettingsStore())
-        s.checkInterval = .custom
-        s.customCheckInterval = 7200
-        #expect(s.currentIntervalSeconds == 7200.0)
+        let settings = AppSettings(store: MockSettingsStore())
+        settings.checkInterval = .custom
+        settings.customCheckInterval = 7200
+        #expect(settings.currentIntervalSeconds == 7200.0)
     }
 
     // 设置写入必须立即落地到 SettingsStore，保证 app 重启后恢复
     @Test func checkIntervalPersistsToStore() {
         let store = MockSettingsStore()
-        let s = AppSettings(store: store)
-        s.checkInterval = .twentyFourHours
+        let settings = AppSettings(store: store)
+        settings.checkInterval = .twentyFourHours
         #expect(store.integer(forKey: DefaultsKey.checkInterval) == CheckInterval.twentyFourHours.rawValue)
     }
 
@@ -493,16 +494,16 @@ struct AppSettingsTests {
 
     // 低于最小值（60s）的输入必须被截断，防止 Timer 过于频繁
     @Test func customIntervalClampedToMinimum() {
-        let s = AppSettings(store: MockSettingsStore())
-        s.customCheckInterval = 10
-        #expect(s.customCheckInterval == DefaultsKey.minimumCustomIntervalSeconds)
+        let settings = AppSettings(store: MockSettingsStore())
+        settings.customCheckInterval = 10
+        #expect(settings.customCheckInterval == DefaultsKey.minimumCustomIntervalSeconds)
     }
 
     // 高于最大值（7天）的输入必须被截断，防止用户意外设置永不检查
     @Test func customIntervalClampedToMaximum() {
-        let s = AppSettings(store: MockSettingsStore())
-        s.customCheckInterval = 999_999_999
-        #expect(s.customCheckInterval == DefaultsKey.maximumCustomIntervalSeconds)
+        let settings = AppSettings(store: MockSettingsStore())
+        settings.customCheckInterval = 999_999_999
+        #expect(settings.customCheckInterval == DefaultsKey.maximumCustomIntervalSeconds)
     }
 
     // 模拟 app 重启：从已填充的 Store 初始化 AppSettings，验证所有字段正确还原
@@ -513,11 +514,11 @@ struct AppSettingsTests {
         store.set(GreedyMode.autoUpdates.rawValue, forKey: DefaultsKey.greedyMode)
         store.set(600, forKey: DefaultsKey.authTimeout)
 
-        let s = AppSettings(store: store)
-        #expect(s.checkInterval == .twelveHours)
-        #expect(s.isAutoUpgradeEnabled == true)
-        #expect(s.greedyMode == .autoUpdates)
-        #expect(s.authTimeout == 600)
+        let settings = AppSettings(store: store)
+        #expect(settings.checkInterval == .twelveHours)
+        #expect(settings.isAutoUpgradeEnabled == true)
+        #expect(settings.greedyMode == .autoUpdates)
+        #expect(settings.authTimeout == 600)
     }
 }
 
@@ -786,7 +787,7 @@ struct GreedyModeTests {
         (GreedyMode.disabled, [String]()),
         (GreedyMode.all, ["--greedy"]),
         (GreedyMode.autoUpdates, ["--greedy-auto-updates"]),
-        (GreedyMode.latest, ["--greedy-latest"]),
+        (GreedyMode.latest, ["--greedy-latest"])
     ])
     func brewArgs(mode: GreedyMode, expected: [String]) {
         #expect(mode.args == expected)
@@ -802,7 +803,7 @@ struct GreedyModeTests {
     @Test(arguments: [
         (GreedyMode.all, "--greedy"),
         (GreedyMode.autoUpdates, "--greedy-auto-updates"),
-        (GreedyMode.latest, "--greedy-latest"),
+        (GreedyMode.latest, "--greedy-latest")
     ])
     func descriptionMatchesFlag(mode: GreedyMode, expected: String) {
         #expect(mode.description == expected)
@@ -1003,16 +1004,16 @@ struct BrewServiceSupplementalTests {
     @Test func cleanupSucceeds() async {
         let runner = MockBrewCommandRunner()
         runner.enqueue(exitCode: 0)
-        let ok = await makeService(runner: runner).cleanup(mode: .pruneAll)
-        #expect(ok == true)
+        let isSuccess = await makeService(runner: runner).cleanup(mode: .pruneAll)
+        #expect(isSuccess == true)
     }
 
     // 清理命令失败时返回 false，不应抛出异常
     @Test func cleanupFails() async {
         let runner = MockBrewCommandRunner()
         runner.enqueue(stderr: "error", exitCode: 1)
-        let ok = await makeService(runner: runner).cleanup(mode: .pruneAll)
-        #expect(ok == false)
+        let isSuccess = await makeService(runner: runner).cleanup(mode: .pruneAll)
+        #expect(isSuccess == false)
     }
 }
 
@@ -1020,7 +1021,7 @@ struct BrewServiceSupplementalTests {
 
 @Suite("NotificationService Content Supplemental")
 @MainActor
-struct NotificationServiceContentSupplementalTests {
+struct NotificationContentSupplementalTests {
 
     private let svc = NotificationService.shared
 
@@ -1174,7 +1175,14 @@ private final class MockBrewService: BrewServiceProtocol, @unchecked Sendable {
 @MainActor
 private final class MockNotificationService: NotificationServiceProtocol {
     var onAuthorizeActionTapped: (() -> Void)?
-    private(set) var upgradeResultCalls: [(upgraded: [BrewPackage], success: Bool, requestedNames: [String], skippedNames: [String], externalSuccessNames: [String])] = []
+    struct UpgradeResultCall {
+        let upgraded: [BrewPackage]
+        let success: Bool
+        let requestedNames: [String]
+        let skippedNames: [String]
+        let externalSuccessNames: [String]
+    }
+    private(set) var upgradeResultCalls: [UpgradeResultCall] = []
     private(set) var transientErrorCalls: [(BrewError, String?)] = []
     private(set) var updatesFoundCalls: [[BrewPackage]] = []
     private(set) var authRequiredCalls: Int = 0
@@ -1182,7 +1190,7 @@ private final class MockNotificationService: NotificationServiceProtocol {
 
     func requestAuthorization() {}
     func showUpgradeResult(upgraded: [BrewPackage], success: Bool, requestedNames: [String], skippedNames: [String], externalSuccessNames: [String]) {
-        upgradeResultCalls.append((upgraded, success, requestedNames, skippedNames, externalSuccessNames))
+        upgradeResultCalls.append(UpgradeResultCall(upgraded: upgraded, success: success, requestedNames: requestedNames, skippedNames: skippedNames, externalSuccessNames: externalSuccessNames))
     }
     func showUpdatesFound(packages: [BrewPackage]) { updatesFoundCalls.append(packages) }
     func showAuthRequired(packageNames: [String], isRetry: Bool) { authRequiredCalls += 1 }
@@ -1601,16 +1609,32 @@ struct AutoSchedulerTests {
         #expect(coordinator.checkModes.count == checkCountAfterFirstFire)
     }
 
-    // MARK: handleWake — lastFireDate 为 nil → 只 arm，不 fire
+    // MARK: handleWake — lastFireDate 和 lastCheckDate 均为 nil → 只 arm，不 fire
 
     @Test func handleWakeNoLastFireDateArmOnly() async {
         let coordinator = MockCoordinator()
+        // lastFireDate = nil，lastCheckDate = nil（coordinator 默认值）
         let scheduler = makeScheduler(network: OnlineNetwork(), coordinator: coordinator)
-        // 不调用 fire()，lastFireDate = nil
         scheduler.handleWake()
         await Task.yield()
         await Task.yield()
         #expect(coordinator.checkModes.isEmpty)
+    }
+
+    // MARK: handleWake — lastFireDate 为 nil 但 lastCheckDate 超期 → 立即 fire
+
+    @Test func handleWakeFiresWhenLastCheckDateOverdue() async {
+        let coordinator = MockCoordinator()
+        let clock = ControllableClock()
+        clock.now = Date(timeIntervalSinceReferenceDate: 7200)
+        let scheduler = makeScheduler(network: OnlineNetwork(), clock: clock, coordinator: coordinator)
+        // 模拟初始扫描设置了 lastCheckDate（超过 1 小时前）
+        coordinator.lastCheckDate = clock.now.addingTimeInterval(-3700)
+        // lastFireDate 仍为 nil（timer 从未触发过）
+        scheduler.handleWake()
+        await Task.yield()
+        await Task.yield()
+        #expect(coordinator.checkModes == [.automatic])
     }
 
     // MARK: handleWake — interval==.off → 无操作

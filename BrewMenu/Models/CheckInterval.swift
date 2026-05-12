@@ -8,9 +8,9 @@ enum CheckInterval: Int, CaseIterable, Identifiable {
     case sixHours = 21600
     case twelveHours = 43200
     case twentyFourHours = 86400
-    
+
     var id: Int { self.rawValue }
-    
+
     /// User-facing description.
     var description: String {
         switch self {

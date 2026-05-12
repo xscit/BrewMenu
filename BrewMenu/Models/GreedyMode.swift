@@ -6,9 +6,9 @@ enum GreedyMode: String, CaseIterable, Identifiable {
     case all = "all"
     case autoUpdates = "autoUpdates"
     case latest = "latest"
-    
+
     var id: String { self.rawValue }
-    
+
     var description: String {
         switch self {
         case .disabled: return String(localized: "opt_none", table: "Settings")
@@ -17,7 +17,7 @@ enum GreedyMode: String, CaseIterable, Identifiable {
         case .latest: return "--greedy-latest"
         }
     }
-    
+
     /// Convert to brew command arguments.
     var args: [String] {
         switch self {

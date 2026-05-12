@@ -2,8 +2,8 @@ import Foundation
 
 /// Homebrew cleanup mode after upgrade.
 enum CleanupMode: String, CaseIterable, Identifiable {
-    case disabled = "disabled"
-    case pruneAll = "pruneAll"
+    case disabled
+    case pruneAll
 
     var id: String { rawValue }
 

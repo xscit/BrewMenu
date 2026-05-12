@@ -1,5 +1,3 @@
-import Foundation
-
 /// Homebrew outdated JSON response structure.
 struct BrewOutdatedResponse: Codable {
     let formulae: [BrewItem]?
@@ -11,7 +9,7 @@ struct BrewItem: Codable {
     let name: String
     let installedVersions: [String]?
     let currentVersion: String
-    
+
     enum CodingKeys: String, CodingKey {
         case name
         case installedVersions = "installed_versions"

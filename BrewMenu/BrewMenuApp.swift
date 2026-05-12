@@ -27,7 +27,7 @@ struct BrewMenuApp: App {
             LabelView(status: coordinator.status)
                 .accessibilityLabel("BrewMenu")
         }
-        
+
         Settings {
             SettingsView(coordinator: coordinator)
         }

@@ -22,12 +22,16 @@ nonisolated struct SystemClock: ClockProvider {
 /// - Timer is tied to screen state: invalidated on `screensDidSleepNotification`,
 ///   rebuilt on `screensDidWakeNotification`. PowerNap dark wakes never fire the
 ///   wake notification, so the timer stays dead and no scan runs.
-/// - On screen wake, `lastFireDate` is compared against the configured interval;
-///   an overdue scan fires immediately before the timer is re-armed.
-/// - `fire()` checks network connectivity before starting a scan. If offline,
-///   the scan is silently skipped and `lastFireDate` is not updated, so the
-///   next cycle or wake will retry. Callers can later gate on `network.isExpensive`
-///   or `network.isConstrained` for hotspot / Low Data Mode support.
+/// - On screen wake, `handleWake` takes the most recent of `lastFireDate` and
+///   `coordinator.lastCheckDate` as the reference point, then compares it against
+///   the configured interval. Using `lastCheckDate` ensures that the initial scan
+///   at startup (and any manual scan) is counted, so the first wake after a long
+///   sleep fires even before the scheduled timer has ever ticked.
+/// - `fire()` checks network connectivity and coordinator status before starting
+///   a scan. If offline or the coordinator is busy (scanning/upgrading), the scan
+///   is silently skipped and `lastFireDate` is not updated, so the next wake or
+///   cycle will retry. Callers can later gate on `network.isExpensive` or
+///   `network.isConstrained` for hotspot / Low Data Mode support.
 /// - Settings changes are observed via `withObservationTracking`; the timer
 ///   re-arms automatically without any external coordination.
 @MainActor
@@ -100,7 +104,13 @@ final class AutoScheduler {
 
     func handleWake() {
         guard settings.checkInterval != .off else { return }
-        guard let last = lastFireDate else {
+        // Take the most recent of lastFireDate and coordinator.lastCheckDate so that:
+        // - manual or initial scans are counted (lastCheckDate set by runScan on success)
+        // - the wake fires on the first long sleep even before the timer has ever ticked
+        let referenceDate = [lastFireDate, coordinator?.lastCheckDate]
+            .compactMap { $0 }
+            .max()
+        guard let last = referenceDate else {
             armTimer()
             return
         }
@@ -163,6 +173,12 @@ final class AutoScheduler {
     func fire() {
         guard networkProvider.isConnected else {
             Log.schedule.info("Skipping automatic scan: no network connection.")
+            return
+        }
+        // Skip if a scan or upgrade is already in progress; don't advance lastFireDate
+        // so the next wake or cycle retries automatically (mirrors the network-offline pattern).
+        guard let status = coordinator?.status, status == .idle || status == .outdated else {
+            Log.schedule.info("Skipping automatic scan: coordinator busy.")
             return
         }
         lastFireDate = clock.now

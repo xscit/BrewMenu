@@ -1,5 +1,3 @@
-import Foundation
-
 /// UserDefaults storage key constants and default values.
 enum DefaultsKey {
     static let checkInterval = "checkInterval"

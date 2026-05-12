@@ -1,6 +1,5 @@
 import Network
 import Observation
-import os
 
 @Observable
 final class NetworkMonitor: NetworkConnectivityProvider {

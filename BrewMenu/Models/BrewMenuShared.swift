@@ -4,7 +4,7 @@ import Foundation
 enum BrewMenuNotification {
     static let helperStarted  = Notification.Name("com.whoami.brewmenu.helper.started")
     static let helperFinished = Notification.Name("com.whoami.brewmenu.helper.finished")
-    
+
     /// Generate a PID-specific trigger notification name.
     static func triggerName(for pid: Int32) -> Notification.Name {
         Notification.Name("com.whoami.brewmenu.trigger.\(pid)")

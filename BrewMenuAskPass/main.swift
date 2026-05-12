@@ -5,31 +5,31 @@ import AppKit
 func askPass(packageInfo: String?) -> String? {
     let alert = NSAlert()
     alert.messageText = NSLocalizedString("Administrative Authorization", tableName: "Notifications", bundle: .main, comment: "")
-    
+
     if let info = packageInfo {
         let format = NSLocalizedString("BrewMenu needs your password to update: %@", tableName: "Notifications", bundle: .main, comment: "")
         alert.informativeText = String(format: format, info)
     } else {
         alert.informativeText = NSLocalizedString("BrewMenu needs your password to complete the Homebrew upgrade.", tableName: "Notifications", bundle: .main, comment: "")
     }
-    
+
     if let lockImage = NSImage(named: "NSLockLockedTemplate") {
         lockImage.isTemplate = false
         alert.icon = lockImage
     }
-    
+
     alert.addButton(withTitle: NSLocalizedString("OK", tableName: "Notifications", bundle: .main, comment: ""))
     alert.addButton(withTitle: NSLocalizedString("Cancel", tableName: "Notifications", bundle: .main, comment: ""))
-    
+
     let input = NSSecureTextField(frame: NSRect(x: 0, y: 0, width: 280, height: 24))
     input.placeholderString = NSLocalizedString("Password", tableName: "Notifications", bundle: .main, comment: "")
     alert.accessoryView = input
-    
+
     // Force frontmost and activate
     alert.window.level = .floating
     NSApp.setActivationPolicy(.accessory)
     NSApp.activate(ignoringOtherApps: true)
-    
+
     let result = alert.runModal()
     if result == .alertFirstButtonReturn {
         return input.stringValue
