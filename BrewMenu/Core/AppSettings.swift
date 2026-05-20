@@ -1,17 +1,15 @@
 import Foundation
 import Observation
 import ServiceManagement
-import os
 
 /// Centralized, observable configuration store.
 ///
 /// All persistent settings live here, each with a `didSet` that writes through
-/// to the injected `SettingsStore`. Observers (e.g., `AutoScheduler`) react to
-/// schedule-affecting changes via `withObservationTracking`, so no explicit
+/// to the injected `SettingsStore`. Observers (e.g., `AutoScheduler`, `CleanupScheduler`)
+/// react to schedule-affecting changes via `withObservationTracking`, so no explicit
 /// callback wiring is required.
 @Observable @MainActor
 final class AppSettings: BrewConfiguration {
-
     // MARK: - Schedule
 
     var checkInterval: CheckInterval {
@@ -49,14 +47,80 @@ final class AppSettings: BrewConfiguration {
         didSet { store.set(greedyMode.rawValue, forKey: DefaultsKey.greedyMode) }
     }
 
-    var cleanupMode: CleanupMode {
-        didSet { store.set(cleanupMode.rawValue, forKey: DefaultsKey.cleanupMode) }
+    // MARK: - Cleanup
+
+    var cleanupSchedule: CleanupSchedule {
+        didSet {
+            store.set(cleanupSchedule.rawValue, forKey: DefaultsKey.cleanupSchedule)
+            Log.core.info("Cleanup schedule changed: \(cleanupSchedule.rawValue)")
+        }
+    }
+
+    var cleanupIntervalDays: Int {
+        didSet {
+            let clamped = min(
+                max(cleanupIntervalDays, DefaultsKey.minimumCleanupIntervalDays),
+                DefaultsKey.maximumCleanupIntervalDays
+            )
+            if clamped != cleanupIntervalDays {
+                cleanupIntervalDays = clamped
+                return
+            }
+            store.set(cleanupIntervalDays, forKey: DefaultsKey.cleanupIntervalDays)
+            Log.core.info("Cleanup interval changed: every \(cleanupIntervalDays) day(s)")
+        }
+    }
+
+    /// Cache files older than this many days are removed. 0 means `--prune=all`.
+    var cleanupPruneDays: Int {
+        didSet {
+            let clamped = min(max(cleanupPruneDays, 0), DefaultsKey.maximumCleanupPruneDays)
+            if clamped != cleanupPruneDays {
+                cleanupPruneDays = clamped
+                return
+            }
+            store.set(cleanupPruneDays, forKey: DefaultsKey.cleanupPruneDays)
+            let pruneArg = cleanupPruneDays == 0 ? "--prune=all" : "--prune=\(cleanupPruneDays)"
+            Log.core.info("Cleanup prune age changed: \(pruneArg)")
+        }
+    }
+
+    var lastCleanupDate: Date? {
+        didSet { store.set(lastCleanupDate, forKey: DefaultsKey.lastCleanupDate) }
+    }
+
+    // MARK: - Exclusions
+
+    var pinnedPackages: Set<String> {
+        didSet { store.set(Array(pinnedPackages), forKey: DefaultsKey.pinnedPackages) }
     }
 
     // MARK: - Authorization
 
     var authTimeout: Int {
         didSet { store.set(authTimeout, forKey: DefaultsKey.authTimeout) }
+    }
+
+    var scanOnLaunch: Bool {
+        didSet { store.set(scanOnLaunch, forKey: DefaultsKey.scanOnLaunch) }
+    }
+
+    // MARK: - Notifications
+
+    var notifyOnScanResults: Bool {
+        didSet { store.set(notifyOnScanResults, forKey: DefaultsKey.notifyOnScanResults) }
+    }
+
+    var notifyOnUpgradeResult: Bool {
+        didSet { store.set(notifyOnUpgradeResult, forKey: DefaultsKey.notifyOnUpgradeResult) }
+    }
+
+    var notifyOnAuthRequired: Bool {
+        didSet { store.set(notifyOnAuthRequired, forKey: DefaultsKey.notifyOnAuthRequired) }
+    }
+
+    var notifyOnErrors: Bool {
+        didSet { store.set(notifyOnErrors, forKey: DefaultsKey.notifyOnErrors) }
     }
 
     // MARK: - System Integration
@@ -82,25 +146,43 @@ final class AppSettings: BrewConfiguration {
         // Read persisted values without triggering didSet
         let savedInterval = store.object(forKey: DefaultsKey.checkInterval) as? Int
             ?? CheckInterval.oneHour.rawValue
-        self.checkInterval = CheckInterval(rawValue: savedInterval) ?? .oneHour
+        checkInterval = CheckInterval(rawValue: savedInterval) ?? .oneHour
 
         var customInterval = store.integer(forKey: DefaultsKey.customCheckInterval)
         if customInterval == 0 { customInterval = DefaultsKey.defaultCustomIntervalSeconds }
-        self.customCheckInterval = customInterval
+        customCheckInterval = customInterval
 
-        self.isAutoUpgradeEnabled = store.bool(forKey: DefaultsKey.isAutoUpgradeEnabled)
+        isAutoUpgradeEnabled = store.bool(forKey: DefaultsKey.isAutoUpgradeEnabled)
+
+        let savedScanOnLaunch = store.object(forKey: DefaultsKey.scanOnLaunch) as? Bool ?? true
+        scanOnLaunch = savedScanOnLaunch
 
         let savedGreedy = store.string(forKey: DefaultsKey.greedyMode) ?? GreedyMode.disabled.rawValue
-        self.greedyMode = GreedyMode(rawValue: savedGreedy) ?? .disabled
+        greedyMode = GreedyMode(rawValue: savedGreedy) ?? .disabled
 
-        let savedCleanup = store.string(forKey: DefaultsKey.cleanupMode) ?? CleanupMode.disabled.rawValue
-        self.cleanupMode = CleanupMode(rawValue: savedCleanup) ?? .disabled
+        let savedCleanup = store.string(forKey: DefaultsKey.cleanupSchedule) ?? CleanupSchedule.disabled.rawValue
+        cleanupSchedule = CleanupSchedule(rawValue: savedCleanup) ?? .disabled
 
-        self.isLaunchAtLoginEnabled = SMAppService.mainApp.status == .enabled
+        var savedCleanupInterval = store.integer(forKey: DefaultsKey.cleanupIntervalDays)
+        if savedCleanupInterval == 0 { savedCleanupInterval = DefaultsKey.defaultCleanupIntervalDays }
+        cleanupIntervalDays = savedCleanupInterval
+
+        cleanupPruneDays = store.integer(forKey: DefaultsKey.cleanupPruneDays)
+        lastCleanupDate = store.object(forKey: DefaultsKey.lastCleanupDate) as? Date
+
+        isLaunchAtLoginEnabled = SMAppService.mainApp.status == .enabled
 
         var savedTimeout = store.integer(forKey: DefaultsKey.authTimeout)
         if savedTimeout == 0 { savedTimeout = DefaultsKey.defaultAuthTimeoutSeconds }
-        self.authTimeout = savedTimeout
+        authTimeout = savedTimeout
+
+        let savedPinned = store.object(forKey: DefaultsKey.pinnedPackages) as? [String] ?? []
+        pinnedPackages = Set(savedPinned)
+
+        notifyOnScanResults = store.object(forKey: DefaultsKey.notifyOnScanResults) as? Bool ?? true
+        notifyOnUpgradeResult = store.object(forKey: DefaultsKey.notifyOnUpgradeResult) as? Bool ?? true
+        notifyOnAuthRequired = store.object(forKey: DefaultsKey.notifyOnAuthRequired) as? Bool ?? true
+        notifyOnErrors = store.object(forKey: DefaultsKey.notifyOnErrors) as? Bool ?? true
     }
 
     // MARK: - Private Helpers
@@ -117,7 +199,7 @@ final class AppSettings: BrewConfiguration {
                 if service.status == .enabled { try service.unregister() }
             }
         } catch {
-            Log.core.error("LaunchAtLogin sync failed: \(error.localizedDescription)")
+            Log.core.warning("LaunchAtLogin sync failed: \(error.localizedDescription)")
             isLaunchAtLoginEnabled = (service.status == .enabled)
         }
     }

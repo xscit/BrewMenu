@@ -1,9 +1,7 @@
 import Foundation
-import os
 
 /// Authorization service: manages the privilege-escalation helper and SUDO_ASKPASS environment.
-struct AuthorizationService: Sendable {
-
+struct AuthorizationService {
     private let bundle: Bundle
 
     static let shared = AuthorizationService(bundle: .main)
@@ -18,12 +16,12 @@ struct AuthorizationService: Sendable {
             return helperURL
         }
 
-        Log.auth.error("BrewMenuAskPass NOT found in bundle for auxiliary executable: \(self.bundle.bundlePath)")
+        Log.auth.error("BrewMenuAskPass NOT found in bundle for auxiliary executable: \(bundle.bundlePath)")
         return nil
     }
 
     /// Build the environment variables required for sudo privilege escalation (SUDO_ASKPASS).
-    func getAuthorizationEnvironment(askPassURL: URL, packages: [String], authTimeout: Int) -> [String: String] {
+    func getAuthorizationEnvironment(askPassURL: URL, packages: [String]) -> [String: String] {
         var env: [String: String] = [:]
 
         env["SUDO_ASKPASS"] = askPassURL.path

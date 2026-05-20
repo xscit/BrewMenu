@@ -1,6 +1,6 @@
 import SwiftUI
 
-// Static stored properties are not supported in generic types; declare at file scope.
+/// Static stored properties are not supported in generic types; declare at file scope.
 private let statusTimeFormatter: DateFormatter = {
     let dateFormatter = DateFormatter()
     dateFormatter.dateStyle = .short
@@ -36,12 +36,11 @@ struct StatusHeaderView<C: BrewMenuCoordinating>: View {
                 }
             })
             .keyboardShortcut("a")
-        case .error(let error):
+        case let .error(error):
             statusLabel(Text(LocalizedStringKey(error.userMessage), tableName: "Errors"), color: .red)
         }
     }
 
-    @ViewBuilder
     private func statusLabel(_ title: Text, color: Color = .primary) -> some View {
         Label {
             title

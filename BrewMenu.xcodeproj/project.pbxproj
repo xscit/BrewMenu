@@ -26,13 +26,6 @@
 			remoteGlobalIDString = 1E7233EC2F89DBF700EA8840;
 			remoteInfo = BrewMenu;
 		};
-		1EF1368E2F9B87E3000C33DF /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 1E7233E52F89DBF700EA8840 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 1E7233EC2F89DBF700EA8840;
-			remoteInfo = BrewMenu;
-		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -63,7 +56,6 @@
 		1EC85C392F921B2900D236C7 /* CHANGELOG.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CHANGELOG.md; sourceTree = "<group>"; };
 		1EF0AEA02F89E3DA00635A24 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		1EF1367B2F9B87D0000C33DF /* BrewMenuTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BrewMenuTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		1EF136882F9B87E3000C33DF /* BrewMenuUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BrewMenuUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -95,11 +87,6 @@
 			path = BrewMenuTests;
 			sourceTree = "<group>";
 		};
-		1EF136892F9B87E3000C33DF /* BrewMenuUITests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = BrewMenuUITests;
-			sourceTree = "<group>";
-		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -124,13 +111,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		1EF136852F9B87E3000C33DF /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -142,7 +122,6 @@
 				1E7233EF2F89DBF700EA8840 /* BrewMenu */,
 				1E7234032F89DC6A00EA8840 /* BrewMenuAskPass */,
 				1EF1367C2F9B87D0000C33DF /* BrewMenuTests */,
-				1EF136892F9B87E3000C33DF /* BrewMenuUITests */,
 				1E7233EE2F89DBF700EA8840 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -153,7 +132,6 @@
 				1E7233ED2F89DBF700EA8840 /* BrewMenu.app */,
 				1E7234022F89DC6A00EA8840 /* BrewMenuAskPass */,
 				1EF1367B2F9B87D0000C33DF /* BrewMenuTests.xctest */,
-				1EF136882F9B87E3000C33DF /* BrewMenuUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -233,30 +211,6 @@
 			productReference = 1EF1367B2F9B87D0000C33DF /* BrewMenuTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		1EF136872F9B87E3000C33DF /* BrewMenuUITests */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 1EF136902F9B87E3000C33DF /* Build configuration list for PBXNativeTarget "BrewMenuUITests" */;
-			buildPhases = (
-				1EF136842F9B87E3000C33DF /* Sources */,
-				1EF136852F9B87E3000C33DF /* Frameworks */,
-				1EF136862F9B87E3000C33DF /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				1E94A2142FB0B17100F9DDCE /* PBXTargetDependency */,
-				1EF1368F2F9B87E3000C33DF /* PBXTargetDependency */,
-			);
-			fileSystemSynchronizedGroups = (
-				1EF136892F9B87E3000C33DF /* BrewMenuUITests */,
-			);
-			name = BrewMenuUITests;
-			packageProductDependencies = (
-			);
-			productName = BrewMenuUITests;
-			productReference = 1EF136882F9B87E3000C33DF /* BrewMenuUITests.xctest */;
-			productType = "com.apple.product-type.bundle.ui-testing";
-		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -265,7 +219,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 2640;
-				LastUpgradeCheck = 2640;
+				LastUpgradeCheck = 2650;
 				TargetAttributes = {
 					1E7233EC2F89DBF700EA8840 = {
 						CreatedOnToolsVersion = 26.4;
@@ -275,10 +229,6 @@
 						CreatedOnToolsVersion = 26.4;
 					};
 					1EF1367A2F9B87D0000C33DF = {
-						CreatedOnToolsVersion = 26.4.1;
-						TestTargetID = 1E7233EC2F89DBF700EA8840;
-					};
-					1EF136872F9B87E3000C33DF = {
 						CreatedOnToolsVersion = 26.4.1;
 						TestTargetID = 1E7233EC2F89DBF700EA8840;
 					};
@@ -304,7 +254,6 @@
 				1E7233EC2F89DBF700EA8840 /* BrewMenu */,
 				1E7234012F89DC6A00EA8840 /* BrewMenuAskPass */,
 				1EF1367A2F9B87D0000C33DF /* BrewMenuTests */,
-				1EF136872F9B87E3000C33DF /* BrewMenuUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -319,13 +268,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		1EF136792F9B87D0000C33DF /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		1EF136862F9B87E3000C33DF /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -356,13 +298,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		1EF136842F9B87E3000C33DF /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -383,19 +318,10 @@
 			isa = PBXTargetDependency;
 			productRef = 1E94A2112FB0B16C00F9DDCE /* SwiftLintBuildToolPlugin */;
 		};
-		1E94A2142FB0B17100F9DDCE /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			productRef = 1E94A2132FB0B17100F9DDCE /* SwiftLintBuildToolPlugin */;
-		};
 		1EF136802F9B87D0000C33DF /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 1E7233EC2F89DBF700EA8840 /* BrewMenu */;
 			targetProxy = 1EF1367F2F9B87D0000C33DF /* PBXContainerItemProxy */;
-		};
-		1EF1368F2F9B87E3000C33DF /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 1E7233EC2F89DBF700EA8840 /* BrewMenu */;
-			targetProxy = 1EF1368E2F9B87E3000C33DF /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -434,6 +360,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = 5W234K352Q;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -459,6 +386,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -498,6 +426,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = 5W234K352Q;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -516,6 +445,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 			};
 			name = Release;
@@ -528,6 +458,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 5W234K352Q;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -541,7 +472,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.6.1;
+				MARKETING_VERSION = 0.6.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.whoami.BrewMenu;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -563,6 +494,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 5W234K352Q;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -576,7 +508,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.6.1;
+				MARKETING_VERSION = 0.6.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.whoami.BrewMenu;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -593,6 +525,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 5W234K352Q;
 				ENABLE_HARDENED_RUNTIME = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
@@ -608,6 +541,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 5W234K352Q;
 				ENABLE_HARDENED_RUNTIME = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
@@ -625,6 +559,7 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 5W234K352Q;
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
@@ -646,6 +581,7 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 5W234K352Q;
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
@@ -658,46 +594,6 @@
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/BrewMenu.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/BrewMenu";
-			};
-			name = Release;
-		};
-		1EF136912F9B87E3000C33DF /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 5W234K352Q;
-				GENERATE_INFOPLIST_FILE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.whoami.BrewMenuUITests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				STRING_CATALOG_GENERATE_SYMBOLS = NO;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TEST_TARGET_NAME = BrewMenu;
-			};
-			name = Debug;
-		};
-		1EF136922F9B87E3000C33DF /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 5W234K352Q;
-				GENERATE_INFOPLIST_FILE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.whoami.BrewMenuUITests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				STRING_CATALOG_GENERATE_SYMBOLS = NO;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TEST_TARGET_NAME = BrewMenu;
 			};
 			name = Release;
 		};
@@ -740,15 +636,6 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		1EF136902F9B87E3000C33DF /* Build configuration list for PBXNativeTarget "BrewMenuUITests" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				1EF136912F9B87E3000C33DF /* Debug */,
-				1EF136922F9B87E3000C33DF /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
@@ -774,11 +661,6 @@
 			productName = "plugin:SwiftLintBuildToolPlugin";
 		};
 		1E94A2112FB0B16C00F9DDCE /* SwiftLintBuildToolPlugin */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 1E949EDD2FB0AB5000F9DDCE /* XCRemoteSwiftPackageReference "SwiftLintPlugins" */;
-			productName = "plugin:SwiftLintBuildToolPlugin";
-		};
-		1E94A2132FB0B17100F9DDCE /* SwiftLintBuildToolPlugin */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 1E949EDD2FB0AB5000F9DDCE /* XCRemoteSwiftPackageReference "SwiftLintPlugins" */;
 			productName = "plugin:SwiftLintBuildToolPlugin";

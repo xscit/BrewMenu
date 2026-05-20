@@ -1,6 +1,5 @@
-import Foundation
 import Darwin
-import os
+import Foundation
 
 /// Homebrew command execution interface.
 protocol BrewCommandRunner: Sendable {
@@ -24,8 +23,13 @@ private final class ResumeGuard: @unchecked Sendable {
 /// Accumulates pipe output across GCD callbacks.
 private final class DataBuffer: @unchecked Sendable {
     private var data = Data()
-    func append(_ chunk: Data) { data.append(chunk) }
-    func extract() -> Data { data }
+    func append(_ chunk: Data) {
+        data.append(chunk)
+    }
+
+    func extract() -> Data {
+        data
+    }
 }
 
 /// Thread-safe registry of active process IDs.
@@ -57,12 +61,12 @@ private final class ActiveProcesses: @unchecked Sendable {
         // Escalate to SIGKILL for the group if processes don't exit within 5 seconds.
         DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + 5) { [weak self] in
             guard let self else { return }
-            self.lock.lock()
-            let remaining = self.pids.intersection(snapshot)
-            self.lock.unlock()
+            lock.lock()
+            let remaining = pids.intersection(snapshot)
+            lock.unlock()
 
             guard !remaining.isEmpty else { return }
-            Log.brew.notice("Escalating to SIGKILL for \(remaining.count) process group(s) that ignored SIGINT.")
+            Log.brew.info("Escalating to SIGKILL for \(remaining.count) process group(s) that ignored SIGINT.")
             for pid in remaining {
                 kill(-pid, SIGKILL)
             }
@@ -79,7 +83,7 @@ final class RealBrewCommandRunner: BrewCommandRunner, @unchecked Sendable {
     func terminateAll() {
         let count = registry.terminateAll()
         if count > 0 {
-            Log.brew.notice("Terminating \(count) active brew process(es) and their groups.")
+            Log.brew.info("Terminating \(count) active brew process(es) and their groups.")
         }
     }
 
@@ -160,7 +164,7 @@ final class RealBrewCommandRunner: BrewCommandRunner, @unchecked Sendable {
             }
 
             // CRITICAL: Close the writing ends in the parent process immediately.
-            // If we don't, readDataToEndOfFile() will hang forever because the 
+            // If we don't, readDataToEndOfFile() will hang forever because the
             // pipe remains open even after the child dies.
             try? outPipe.fileHandleForWriting.close()
             try? errPipe.fileHandleForWriting.close()
@@ -205,9 +209,9 @@ private func withCStringArray<R>(_ strings: [String], _ body: (UnsafePointer<Uns
 }
 
 private func WIFEXITED(_ status: Int32) -> Bool {
-    return (status & 0x7f) == 0
+    (status & 0x7F) == 0
 }
 
 private func WEXITSTATUS(_ status: Int32) -> Int32 {
-    return (status >> 8) & 0xff
+    (status >> 8) & 0xFF
 }

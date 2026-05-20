@@ -1,8 +1,7 @@
 import Foundation
 
 /// Value type encapsulating all parameters for a single Homebrew command execution.
-/// Replaces the previous 8-parameter `execute()` signature with a structured, self-documenting type.
-struct BrewCommand: Sendable {
+struct BrewCommand {
     let executable: URL
     let args: [String]
     var packages: [String] = []

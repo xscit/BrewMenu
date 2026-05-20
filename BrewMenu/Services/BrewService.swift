@@ -1,5 +1,4 @@
 import Foundation
-import os
 
 // MARK: - Protocol
 
@@ -8,7 +7,7 @@ protocol BrewServiceProtocol: Sendable {
     func checkIfPackageIsStillOutdated(name: String, greedyArgs: [String]) async -> Bool
     func upgrade(packages: [BrewPackage], greedyArgs: [String], authTimeout: Int, onPID: (@Sendable (Int32) -> Void)?) async -> Result<Bool, BrewError>
     func terminateAll()
-    func cleanup(mode: CleanupMode) async -> Bool
+    func cleanup(pruneDays: Int) async -> Bool
 }
 
 /// Core Homebrew service: outdated checks, upgrade execution, and JSON parsing.
@@ -56,18 +55,18 @@ struct BrewService: BrewServiceProtocol {
     }
 
     /// Execute an upgrade task.
-    func upgrade(packages: [BrewPackage], greedyArgs: [String] = [], authTimeout: Int = 300, onPID: (@Sendable (Int32) -> Void)? = nil) async -> Result<Bool, BrewError> {
+    func upgrade(packages: [BrewPackage], greedyArgs: [String] = [], authTimeout _: Int = 300, onPID: (@Sendable (Int32) -> Void)? = nil) async -> Result<Bool, BrewError> {
         guard let url = brewURL else { return .failure(.brewNotFound) }
         if packages.isEmpty { return .success(true) }
 
-        let packageNames = packages.map { $0.name }
+        let packageNames = packages.map(\.name)
 
         guard let helperURL = await authService.ensureAskPassHelper() else {
             return .failure(.commandFailed("Authorization helper is missing"))
         }
 
         let authEnv = authService.getAuthorizationEnvironment(
-            askPassURL: helperURL, packages: packageNames, authTimeout: authTimeout
+            askPassURL: helperURL, packages: packageNames
         )
 
         let cmd = BrewCommand(
@@ -114,10 +113,11 @@ struct BrewService: BrewServiceProtocol {
         runner.terminateAll()
     }
 
-    /// Execute cleanup task.
-    func cleanup(mode: CleanupMode) async -> Bool {
+    /// Execute cleanup task. `pruneDays` 0 means `--prune=all`; positive values mean `--prune=N`.
+    func cleanup(pruneDays: Int) async -> Bool {
         guard let url = brewURL else { return false }
-        let cmd = BrewCommand(executable: url, args: ["cleanup"] + mode.args)
+        let pruneArg = pruneDays == 0 ? "--prune=all" : "--prune=\(pruneDays)"
+        let cmd = BrewCommand(executable: url, args: ["cleanup", pruneArg])
         let (_, err, exitCode) = await runner.execute(cmd)
         if exitCode != 0 {
             Log.brew.warning("Cleanup failed (exit \(exitCode)): \(err)")

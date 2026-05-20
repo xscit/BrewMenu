@@ -9,17 +9,19 @@ enum CheckInterval: Int, CaseIterable, Identifiable {
     case twelveHours = 43200
     case twentyFourHours = 86400
 
-    var id: Int { self.rawValue }
+    var id: Int {
+        rawValue
+    }
 
     /// User-facing description.
     var description: String {
         switch self {
-        case .off: return String(localized: "opt_manual_only", table: "Settings")
-        case .custom: return String(localized: "opt_custom", table: "Settings")
-        case .oneHour: return String(localized: "opt_1_hour", table: "Settings")
-        case .sixHours: return String(localized: "opt_6_hours", table: "Settings")
-        case .twelveHours: return String(localized: "opt_12_hours", table: "Settings")
-        case .twentyFourHours: return String(localized: "opt_24_hours", table: "Settings")
+        case .off: String(localized: "opt_manual_only", table: "Settings")
+        case .custom: String(localized: "opt_custom", table: "Settings")
+        case .oneHour: String(localized: "opt_1_hour", table: "Settings")
+        case .sixHours: String(localized: "opt_6_hours", table: "Settings")
+        case .twelveHours: String(localized: "opt_12_hours", table: "Settings")
+        case .twentyFourHours: String(localized: "opt_24_hours", table: "Settings")
         }
     }
 }

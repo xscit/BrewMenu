@@ -12,15 +12,18 @@ A native macOS menu bar app for [Homebrew](https://brew.sh). Checks for outdated
 
 ## Features
 
-- **Scheduled checks** — every 1 / 6 / 12 / 24 hours, or a custom interval (1 minute – 7 days), or manual only.
+- **Scheduled checks** — every 1 / 6 / 12 / 24 hours, or a custom interval (5 minutes – 30 days), or manual only.
+- **Scan on launch** — optionally disable the startup scan; scheduled auto-scans are unaffected.
 - **Wake-up catch-up** — if the scan window elapsed during sleep, BrewMenu re-runs immediately on wake.
 - **PowerNap-aware** — does nothing while the screen is asleep; the timer is rebuilt when the display wakes.
 - **Sequential upgrade queue** — packages are upgraded one at a time so a single failure doesn't take down the rest.
 - **Pre-upgrade skip** — if a package was already upgraded externally (e.g., from Terminal), it's detected and skipped, not re-run.
 - **Greedy modes** — supports `--greedy`, `--greedy-auto-updates`, and `--greedy-latest` for casks that auto-update themselves.
-- **Optional auto-cleanup** — runs `brew cleanup --prune=all` after a successful batch.
-- **Cancellable at any point** — `⌘ .` aborts the active scan, upgrade, or pending authorization. Running `brew` processes (and their `curl` / `git` children) are sent `SIGINT`, then `SIGKILL` after 5 seconds if they refuse to exit.
-- **Notifications** — English only. Strings live in `BrewMenu/Localizables/*.xcstrings`.
+- **Per-package exclusions** — right-click any package in the upgrade submenu and choose "Exclude from BrewMenu" to hide it from future scans and upgrades. The Settings → Exclusions tab lists all excluded packages with individual removal and a "Clear All" button. Exclusions are app-side only — `brew pin` is never called and your Homebrew installation is unchanged.
+- **Flexible cleanup** — three scheduling modes: disabled / after each upgrade batch / every N days (system-scheduled via `NSBackgroundActivityScheduler`). Configurable prune age (`--prune=all` or N days). One-click manual trigger in Settings. The every-N-days mode defers automatically if a scan or upgrade is already running.
+- **Cancellable at any point** — `⌘ .` aborts the active scan, upgrade, or pending authorization. Running `brew` processes (and their `curl` / `git` children) are sent `SIGINT`, then `SIGKILL` after 5 seconds if they refuse to exit. Any packages that hadn't started yet are reported as `⏭️ Skipped` in the final notification — never as failed.
+- **Consolidated notifications** — upgrade errors (network failures, auth failures, command errors) are folded into the single upgrade-result notification as per-package lines (`❌ wget (Network Unavailable)`) rather than firing separate banners. The only mid-upgrade notification is the authorization prompt, which requires user action. When auto-upgrade is off the scan result says "📦 N packages **can be** updated"; when on it says "📦 Upgrading N packages" so you know the upgrade is already running. A "Brew Ready" banner fires when a scan finds no updates (all modes except the silent `refresh`). A "Homebrew Not Found" banner fires if brew cannot be located — so you're not left guessing when away from the machine. Strings live in `BrewMenu/Localizables/*.xcstrings`.
+- **Per-category notification toggles** — Settings → Notifications lets you independently silence each notification category: Scan Results, Upgrade Complete, Authorization Required, and Errors. The "Homebrew Not Found" fatal alert is always delivered regardless of these settings.
 
 ## Authorization model
 
@@ -37,7 +40,7 @@ When `brew upgrade` hits a cask that requires `sudo`, BrewMenu does **not** run 
 
 PID lineage validation prevents a malicious process from spoofing a `helperStarted` notification, since it would need to fake a process tree the kernel exposes. The password lives only in the short-lived AskPass subprocess and goes directly to `sudo` — it never crosses an IPC boundary.
 
-If you don't enter the password within the timeout (default 5 minutes), AskPass exits, `sudo` fails, that one package is marked `Skipped`, and the queue continues with the next package.
+If you don't enter the password within the timeout (default 5 minutes, configurable up to 60 minutes), AskPass exits, `sudo` fails, that one package is marked `Skipped`, and the queue continues with the next package.
 
 ## Install
 
@@ -74,10 +77,11 @@ A short tour, since this is a public repo and someone is going to want to read t
 
 ```
 AppCoordinator (@Observable @MainActor)
-├── AutoScheduler   — timer lifecycle, sleep/wake, PowerNap
-├── UpgradeEngine   — sequential upgrade queue, cancellation, pre-upgrade skip
-├── SudoMonitor     — DistributedNotification bridge to AskPass
-└── NetworkMonitor  — NWPathMonitor wrapper; offline auto-scans skip silently
+├── AutoScheduler      — timer lifecycle, sleep/wake, PowerNap
+├── CleanupScheduler   — NSBackgroundActivityScheduler + wake fallback
+├── UpgradeEngine      — sequential upgrade queue, cancellation, pre-upgrade skip
+├── SudoMonitor        — DistributedNotification bridge to AskPass
+└── NetworkMonitor     — NWPathMonitor wrapper; offline auto-scans skip silently
 ```
 
 State machine: `idle → scanning → outdated → updating → authorizing → idle`. `error` is terminal and requires user intervention (e.g., brew not on PATH).

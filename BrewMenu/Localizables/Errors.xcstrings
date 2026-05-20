@@ -45,13 +45,13 @@
         }
       }
     },
-    "err_generic" : {
+    "err_command_failed" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "An error occurred"
+            "value" : "Command failed"
           }
         }
       }

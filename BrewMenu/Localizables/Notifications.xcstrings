@@ -40,7 +40,29 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Authorization timed out for [%@]. It has been skipped."
+            "value" : "⏱️ Authorization timed out for [%@]. It has been skipped."
+          }
+        }
+      }
+    },
+    "body_brew_not_found" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "❌ BrewMenu cannot locate Homebrew. Open the menu to fix."
+          }
+        }
+      }
+    },
+    "title_brew_not_found" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Homebrew Not Found"
           }
         }
       }
@@ -63,17 +85,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "⚠️ Identity Authentication Failed for [%@]"
-          }
-        }
-      }
-    },
-    "body_transient_cancelled %@" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "⏭️ %@"
           }
         }
       }
@@ -106,18 +117,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "📦 %lld packages can be updated: %@"
-          }
-        }
-      }
-    },
-    "body_upgrade_failed %@" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "❌ Failed to upgrade: %@"
+            "value" : "📦 %lld package(s) can be updated: %@"
           }
         }
       }
@@ -140,6 +140,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "❌ Failed: %@"
+          }
+        }
+      }
+    },
+    "line_package_failed_reason %@ %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "❌ %@ (%@)"
           }
         }
       }
@@ -232,13 +243,13 @@
         }
       }
     },
-    "title_operation_cancelled" : {
+    "title_network_unavailable" : {
       "extractionState" : "manual",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Operation Cancelled"
+            "value" : "Network Unavailable"
           }
         }
       }
@@ -250,6 +261,28 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Partial Upgrade"
+          }
+        }
+      }
+    },
+    "title_upgrading" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Upgrading"
+          }
+        }
+      }
+    },
+    "body_upgrading %lld %@" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "📦 Upgrading %lld packages: %@"
           }
         }
       }

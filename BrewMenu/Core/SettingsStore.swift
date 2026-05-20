@@ -9,5 +9,5 @@ protocol SettingsStore: Sendable {
     func set(_ value: Any?, forKey key: String)
 }
 
-// UserDefaults already implements all required methods — conformance is automatic.
+/// UserDefaults already implements all required methods — conformance is automatic.
 extension UserDefaults: SettingsStore {}

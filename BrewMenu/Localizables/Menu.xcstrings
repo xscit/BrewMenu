@@ -166,6 +166,17 @@
         }
       }
     },
+    "btn_pin_package" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exclude from BrewMenu"
+          }
+        }
+      }
+    },
     "pkg_upgrade_accessibility %@ %@ %@" : {
       "extractionState" : "manual",
       "localizations" : {

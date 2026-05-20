@@ -1,7 +1,6 @@
-import Foundation
 import AppKit
+import Foundation
 import Observation
-import os
 
 // MARK: - Injectable protocols
 
@@ -14,7 +13,9 @@ nonisolated protocol ClockProvider {
 }
 
 nonisolated struct SystemClock: ClockProvider {
-    var now: Date { Date() }
+    var now: Date {
+        Date()
+    }
 }
 
 /// Background scheduler: manages the auto-scan timer lifecycle.
@@ -30,10 +31,10 @@ nonisolated struct SystemClock: ClockProvider {
 /// - `fire()` checks network connectivity and coordinator status before starting
 ///   a scan. If offline or the coordinator is busy (scanning/upgrading), the scan
 ///   is silently skipped and `lastFireDate` is not updated, so the next wake or
-///   cycle will retry. Callers can later gate on `network.isExpensive` or
-///   `network.isConstrained` for hotspot / Low Data Mode support.
+///   cycle will retry.
 /// - Settings changes are observed via `withObservationTracking`; the timer
 ///   re-arms automatically without any external coordination.
+/// - Scheduled cleanup is handled separately by `CleanupScheduler`.
 @MainActor
 final class AutoScheduler {
     private weak var coordinator: BrewStatusManager?
@@ -50,10 +51,11 @@ final class AutoScheduler {
          settings: AppSettings,
          network: NetworkConnectivityProvider,
          clock: ClockProvider = SystemClock(),
-         workspaceCenter: NotificationCenter = NSWorkspace.shared.notificationCenter) {
+         workspaceCenter: NotificationCenter = NSWorkspace.shared.notificationCenter)
+    {
         self.coordinator = coordinator
         self.settings = settings
-        self.networkProvider = network
+        networkProvider = network
         self.clock = clock
         self.workspaceCenter = workspaceCenter
     }
@@ -108,7 +110,7 @@ final class AutoScheduler {
         // - manual or initial scans are counted (lastCheckDate set by runScan on success)
         // - the wake fires on the first long sleep even before the timer has ever ticked
         let referenceDate = [lastFireDate, coordinator?.lastCheckDate]
-            .compactMap { $0 }
+            .compactMap(\.self)
             .max()
         guard let last = referenceDate else {
             armTimer()

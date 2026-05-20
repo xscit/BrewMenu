@@ -1,7 +1,7 @@
 import Foundation
 import Observation
 
-/// Write-side coordinator interface for subsystems (UpgradeEngine, SudoMonitor, AutoScheduler).
+/// Write-side coordinator interface for subsystems (UpgradeEngine, SudoMonitor, AutoScheduler, CleanupScheduler).
 ///
 /// Subsystems receive this narrow view of the coordinator: they can read current
 /// state and push state transitions, but they cannot invoke user-facing actions.
@@ -18,10 +18,18 @@ protocol BrewStatusManager: AnyObject {
     func setErrorMessage(_ message: String?)
 
     func check(mode: ScanMode) async
+    func cleanup() async
+    func cancel(shouldAbortSequence: Bool)
 }
 
 extension BrewStatusManager {
-    func check() async { await check(mode: .manual) }
+    func check() async {
+        await check(mode: .manual)
+    }
+
+    func cancel() {
+        cancel(shouldAbortSequence: true)
+    }
 }
 
 /// Full coordinator interface for Views.
@@ -33,6 +41,7 @@ extension BrewStatusManager {
 protocol BrewMenuCoordinating: BrewStatusManager, Observable {
     func upgrade() async
     func upgrade(package: BrewPackage) async
-    func cancel()
     func triggerAuthorizationUI()
+    func pin(package: BrewPackage)
+    func unpin(packageName: String)
 }

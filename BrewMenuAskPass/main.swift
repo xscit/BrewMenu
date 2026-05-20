@@ -1,5 +1,5 @@
-import Foundation
 import AppKit
+import Foundation
 
 /// Present a password input dialog and return the entered password, or nil if cancelled.
 func askPass(packageInfo: String?) -> String? {
@@ -60,12 +60,12 @@ let observer = center.addObserver(forName: BrewMenuNotification.triggerName(for:
     CFRunLoopStop(CFRunLoopGetCurrent())
 }
 
-// 3. Listen for cancel signal from main app
+/// 3. Listen for cancel signal from main app
 let cancelObserver = center.addObserver(forName: BrewMenuNotification.cancelName(for: Int32(pid)), object: nil, queue: .main) { _ in
     exit(1)
 }
 
-// 4. Enter silent wait indefinitely (timeout is managed by the main app)
+/// 4. Enter silent wait indefinitely (timeout is managed by the main app)
 let env = ProcessInfo.processInfo.environment
 CFRunLoopRun()
 
@@ -73,15 +73,16 @@ CFRunLoopRun()
 center.removeObserver(observer)
 center.removeObserver(cancelObserver)
 
-// 5. If triggered by user click, show password dialog; otherwise exit on timeout
+// 6. If triggered by user click, show password dialog; otherwise exit on timeout
 let packageInfo = receivedPackageInfo ?? env["BREW_MENU_PACKAGE_INFO"]
 let result = triggered ? askPass(packageInfo: packageInfo) : nil
 
-// 6. Send finished signal (notify the main app to clean up UI state)
+/// 6. Send finished signal (notify the main app to clean up UI state)
+let isCancelled = (triggered && result == nil)
 center.postNotificationName(
     BrewMenuNotification.helperFinished,
     object: "\(pid)",
-    userInfo: nil,
+    userInfo: isCancelled ? ["status": "cancelled"] : nil,
     deliverImmediately: true
 )
 

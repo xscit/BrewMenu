@@ -11,31 +11,36 @@ enum BrewError: Error, Equatable {
     /// Whether this error should lock the app into the `.error` state.
     var isFatal: Bool {
         switch self {
-        case .brewNotFound: return true
-        default: return false
+        case .brewNotFound: true
+        default: false
         }
     }
 
     var isNetworkError: Bool {
-        if case .networkUnavailable = self { return true }
-        return false
+        self == .networkUnavailable
     }
 
     /// Whether the user cancelled during the authorization phase.
     var isUserCancelled: Bool {
-        if case .userCancelled = self { return true }
-        return false
+        self == .userCancelled
     }
 
-    /// User-facing error description.
+    /// Short localised description suitable for notifications and UI labels.
     var userMessage: String {
         switch self {
-        case .brewNotFound: return String(localized: "err_brew_not_found", table: "Errors")
-        case .networkUnavailable: return String(localized: "err_network_unavailable", table: "Errors")
-        case .userCancelled: return String(localized: "err_user_cancelled", table: "Errors")
-        case .authenticationFailed: return String(localized: "err_auth_failed", table: "Errors")
-        case .commandFailed(let reason): return reason
+        case .brewNotFound: String(localized: "err_brew_not_found", table: "Errors")
+        case .networkUnavailable: String(localized: "err_network_unavailable", table: "Errors")
+        case .userCancelled: String(localized: "err_user_cancelled", table: "Errors")
+        case .authenticationFailed: String(localized: "err_auth_failed", table: "Errors")
+        case .commandFailed: String(localized: "err_command_failed", table: "Errors")
         }
+    }
+
+    /// Raw stderr content for `.commandFailed`; `nil` for all other cases.
+    /// Log this instead of surfacing it in notifications.
+    var technicalDetail: String? {
+        guard case let .commandFailed(reason) = self else { return nil }
+        return reason
     }
 
     /// Parse stdout/stderr/exitCode into a typed error (nil means success).
@@ -46,28 +51,31 @@ enum BrewError: Error, Equatable {
 
         // Detect network unavailability (curl/git failures from brew update)
         if combined.contains("curl: (") ||
-           combined.contains("network is unreachable") ||
-           combined.contains("could not resolve host") ||
-           combined.contains("failed to connect") ||
-           combined.contains("no route to host") {
+            combined.contains("network is unreachable") ||
+            combined.contains("could not resolve host") ||
+            combined.contains("failed to connect") ||
+            combined.contains("no route to host")
+        {
             return .networkUnavailable
         }
 
         // Detect complete authentication failure (PAM/Kerberos-level errors, not password count).
         if combined.contains("auth could not be established") ||
-           combined.contains("conversation with the agent failed") {
+            combined.contains("conversation with the agent failed")
+        {
             return .authenticationFailed
         }
 
         // 1. Check if the user ultimately cancelled. If they cancelled on the 2nd
         // or 3rd try, sudo will append "a password is required". We must check this
         // FIRST, so that an ultimate cancellation isn't misclassified as an auth failure.
-        if exitCode == 1 {
+        if exitCode != 0 {
             let stderrLower = stderr.lowercased()
             if stderrLower.contains("no password was provided") ||
-               stderrLower.contains("no password was supplied") ||
-               stderrLower.contains("a password is required") ||
-               stderrLower.contains("no tty present and no askpass program specified") {
+                stderrLower.contains("no password was supplied") ||
+                stderrLower.contains("a password is required") ||
+                stderrLower.contains("no tty present and no askpass program specified")
+            {
                 return .userCancelled
             }
 

@@ -1,23 +1,20 @@
 import Foundation
 
-/// Homebrew cleanup mode after upgrade.
-enum CleanupMode: String, CaseIterable, Identifiable {
+/// When to run `brew cleanup` automatically.
+enum CleanupSchedule: String, CaseIterable, Identifiable {
     case disabled
-    case pruneAll
+    case afterUpgrade
+    case everyNDays
 
-    var id: String { rawValue }
+    var id: String {
+        rawValue
+    }
 
     var description: String {
         switch self {
-        case .disabled: return String(localized: "opt_none", table: "Settings")
-        case .pruneAll: return "--prune=all"
-        }
-    }
-
-    var args: [String] {
-        switch self {
-        case .disabled: return []
-        case .pruneAll: return ["--prune=all"]
+        case .disabled: String(localized: "opt_none", table: "Settings")
+        case .afterUpgrade: String(localized: "opt_after_upgrade", table: "Settings")
+        case .everyNDays: String(localized: "opt_every_n_days", table: "Settings")
         }
     }
 }

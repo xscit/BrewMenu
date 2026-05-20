@@ -1,6 +1,5 @@
-import Foundation
 import Darwin
-import os
+import Foundation
 
 /// Monitors DistributedNotification signals from the AskPass helper to coordinate
 /// authorization prompts during upgrades.
@@ -19,7 +18,10 @@ final class SudoMonitor {
     /// Wrapper that auto-removes the observer from DistributedNotificationCenter on dealloc.
     private final class ObserverWrapper {
         let observer: NSObjectProtocol
-        init(_ observer: NSObjectProtocol) { self.observer = observer }
+        init(_ observer: NSObjectProtocol) {
+            self.observer = observer
+        }
+
         deinit { DistributedNotificationCenter.default().removeObserver(observer) }
     }
 
@@ -37,8 +39,8 @@ final class SudoMonitor {
 
     /// Register the PID of a new upgrade session.
     func registerSession(pid: Int32) {
-        self.currentSessionPID = pid
-        self.notifiedPIDs.removeAll()
+        currentSessionPID = pid
+        notifiedPIDs.removeAll()
     }
 
     /// Start monitoring (listen for distributed notifications).
@@ -49,7 +51,7 @@ final class SudoMonitor {
 
         // Listen for helper-started signal
         let startedObs = center.addObserver(forName: BrewMenuNotification.helperStarted, object: nil, queue: .main) { [weak self] note in
-            guard let self = self, let pidStr = note.object as? String, let pid = Int32(pidStr) else { return }
+            guard let self, let pidStr = note.object as? String, let pid = Int32(pidStr) else { return }
 
             Task { @MainActor in
                 // Lineage check: verify the helper is a descendant of the current brew process
@@ -67,12 +69,16 @@ final class SudoMonitor {
 
         // Listen for helper-finished signal
         let finishedObs = center.addObserver(forName: BrewMenuNotification.helperFinished, object: nil, queue: .main) { [weak self] note in
-            guard let self = self, let pidStr = note.object as? String, let pid = Int32(pidStr) else { return }
+            guard let self, let pidStr = note.object as? String, let pid = Int32(pidStr) else { return }
 
             Task { @MainActor in
                 // No lineage re-check needed — the process may have already exited
                 self.activePIDs.remove(pid)
-                await self.handleMonitorResult()
+                if let userInfo = note.userInfo, userInfo["status"] as? String == "cancelled" {
+                    self.coordinator?.cancel(shouldAbortSequence: false)
+                } else {
+                    await self.handleMonitorResult()
+                }
             }
         }
 
@@ -107,7 +113,7 @@ final class SudoMonitor {
     }
 
     private func handleMonitorResult() async {
-        guard let coordinator = coordinator else { return }
+        guard let coordinator else { return }
 
         // New PIDs detected — notify user
         let newPIDs = activePIDs.subtracting(notifiedPIDs)
@@ -117,9 +123,9 @@ final class SudoMonitor {
 
             let name = coordinator.activeUpgradePackageName ?? "a package"
             if isRetry {
-                Log.auth.notice("Sudo authorization retry requested for [\(name)].")
+                Log.auth.info("Sudo authorization retry requested for [\(name)].")
             } else {
-                Log.auth.notice("Sudo authorization required for [\(name)].")
+                Log.auth.info("Sudo authorization required for [\(name)].")
             }
 
             notificationService.showAuthRequired(packageNames: [name], isRetry: isRetry)
@@ -129,7 +135,7 @@ final class SudoMonitor {
         }
 
         // All helpers finished — return to updating state
-        if activePIDs.isEmpty && coordinator.status == .authorizing {
+        if activePIDs.isEmpty, coordinator.status == .authorizing {
             timeoutTask?.cancel()
             timeoutTask = nil
             coordinator.transition(to: .updating)
@@ -152,6 +158,8 @@ final class SudoMonitor {
                 deliverImmediately: true
             )
         }
+
+        coordinator?.cancel(shouldAbortSequence: false)
     }
 
     private func startTimeoutTask() {
@@ -188,9 +196,13 @@ final class SudoMonitor {
     /// Directly invoke the helperFinished handling logic without going through
     /// DistributedNotificationCenter. Use this in unit tests.
     @MainActor
-    func simulateHelperFinished(pid: Int32) async {
+    func simulateHelperFinished(pid: Int32, isCancelled: Bool = false) async {
         activePIDs.remove(pid)
-        await handleMonitorResult()
+        if isCancelled {
+            coordinator?.cancel(shouldAbortSequence: false)
+        } else {
+            await handleMonitorResult()
+        }
     }
 
     // MARK: - Helpers
@@ -203,7 +215,7 @@ final class SudoMonitor {
 
         let result = sysctl(&mib, UInt32(mib.count), &info, &size, nil, 0)
         guard result == 0, size > 0 else {
-            Log.auth.error("sysctl failed for PID \(pid)")
+            Log.auth.warning("sysctl failed for PID \(pid)")
             return nil
         }
 

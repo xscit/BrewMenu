@@ -17,12 +17,30 @@ struct UpgradeActionSection<C: BrewMenuCoordinating>: View {
 
             Menu {
                 ForEach(coordinator.outdatedPackages) { pkg in
-                    Button(action: {
-                        Task { await coordinator.upgrade(package: pkg) }
-                    }, label: {
+                    Menu {
+                        Button {
+                            Task { await coordinator.upgrade(package: pkg) }
+                        } label: {
+                            Label {
+                                Text("pkg_upgrade_label \(pkg.name) \(pkg.oldVersion) \(pkg.newVersion)", tableName: "Menu")
+                            } icon: {
+                                Image(systemName: "arrow.up.circle")
+                            }
+                        }
+                        .accessibilityLabel(Text("pkg_upgrade_accessibility \(pkg.name) \(pkg.oldVersion) \(pkg.newVersion)", tableName: "Menu"))
+                        Divider()
+                        Button {
+                            coordinator.pin(package: pkg)
+                        } label: {
+                            Label {
+                                Text("btn_pin_package", tableName: "Menu")
+                            } icon: {
+                                Image(systemName: "pin.slash")
+                            }
+                        }
+                    } label: {
                         Text("pkg_upgrade_label \(pkg.name) \(pkg.oldVersion) \(pkg.newVersion)", tableName: "Menu")
-                    })
-                    .accessibilityLabel(Text("pkg_upgrade_accessibility \(pkg.name) \(pkg.oldVersion) \(pkg.newVersion)", tableName: "Menu"))
+                    }
                 }
             } label: {
                 Label {

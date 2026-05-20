@@ -18,8 +18,11 @@ struct BrewItem: Codable {
 }
 
 /// Business-layer package model.
-struct BrewPackage: Identifiable, Sendable, Equatable {
-    var id: String { name }
+struct BrewPackage: Identifiable, Equatable {
+    var id: String {
+        name
+    }
+
     let name: String
     let oldVersion: String
     let newVersion: String

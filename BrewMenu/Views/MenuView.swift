@@ -23,7 +23,7 @@ struct MenuView<C: BrewMenuCoordinating>: View {
         }
 
         // 3. Core actions (refresh, upgrade)
-        if showCoreActions {
+        if coordinator.status == .idle || coordinator.status == .outdated {
             Divider()
 
             if coordinator.status == .outdated {
@@ -65,9 +65,5 @@ struct MenuView<C: BrewMenuCoordinating>: View {
             }
         })
         .keyboardShortcut("q")
-    }
-
-    private var showCoreActions: Bool {
-        coordinator.status == .idle || coordinator.status == .outdated
     }
 }

@@ -1,6 +1,5 @@
 import Foundation
 import UserNotifications
-import os
 
 // MARK: - Protocol
 
@@ -8,11 +7,13 @@ import os
 protocol NotificationServiceProtocol: AnyObject {
     var onAuthorizeActionTapped: (() -> Void)? { get set }
     func requestAuthorization()
-    func showUpgradeResult(upgraded: [BrewPackage], success: Bool, requestedNames: [String], skippedNames: [String], externalSuccessNames: [String])
-    func showUpdatesFound(packages: [BrewPackage])
+    func showNoUpdatesFound()
+    func showUpgradeResult(upgraded: [BrewPackage], success: Bool, requestedNames: [String], skippedNames: [String], externalSuccessNames: [String], failedErrors: [String: String])
+    func showUpdatesFound(packages: [BrewPackage], willAutoUpgrade: Bool)
     func showAuthRequired(packageNames: [String], isRetry: Bool)
     func showAuthTimeout(packageName: String)
     func showTransientError(error: BrewError, packageName: String?)
+    func showBrewNotFound()
 }
 
 /// Notification service: manages system notifications, categories, and upgrade result display.
@@ -22,6 +23,13 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate, Not
 
     /// Callback fired when the user taps the "Authorize" action on an auth notification.
     var onAuthorizeActionTapped: (() -> Void)?
+
+    /// Test hook: called with every request before it is submitted to UNUserNotificationCenter.
+    /// Set this in unit tests to capture and inspect outgoing notifications.
+    var onRequestScheduled: ((UNNotificationRequest) -> Void)?
+
+    /// Injected settings used to gate notifications by user preference.
+    weak var settings: AppSettings?
 
     // MARK: - Identifiers
 
@@ -33,16 +41,20 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate, Not
         static let authorize = "AUTHORIZE"
     }
 
-    private enum RequestID {
+    enum RequestID {
         static let updatesFound = "UPDATES_FOUND"
-        static let authTrigger  = "AUTH_TRIGGER"
-        static func authRetry() -> String { "AUTH_RETRY_\(UUID().uuidString)" }
-        static func error() -> String { "ERROR_\(UUID().uuidString)" }
+        static let noUpdatesFound = "NO_UPDATES_FOUND"
+        static let authTrigger = "AUTH_TRIGGER"
+        static let authRetry = "AUTH_RETRY"
+        static let brewNotFound = "BREW_NOT_FOUND"
+        static func error() -> String {
+            "ERROR_\(UUID().uuidString)"
+        }
     }
 
     private let center = UNUserNotificationCenter.current()
 
-    private override init() {
+    override private init() {
         super.init()
         center.delegate = self
     }
@@ -71,15 +83,53 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate, Not
         }
     }
 
+    // MARK: - No Updates
+
+    /// Notify the user that a scan found no updates.
+    func showNoUpdatesFound() {
+        guard settings?.notifyOnScanResults != false else { return }
+        let result = noUpdatesFoundContent()
+        schedule(title: result.title, body: result.body, identifier: RequestID.noUpdatesFound)
+    }
+
+    func noUpdatesFoundContent() -> (title: String, body: String) {
+        (
+            String(localized: "title_brew_ready", table: "Notifications"),
+            String(localized: "body_brew_ready", table: "Notifications")
+        )
+    }
+
+    // MARK: - Updates Found
+
+    /// Notify the user that updates are available or that an auto-upgrade is starting.
+    func showUpdatesFound(packages: [BrewPackage], willAutoUpgrade: Bool = false) {
+        guard settings?.notifyOnScanResults != false else { return }
+        let result = updatesFoundContent(packages: packages, willAutoUpgrade: willAutoUpgrade)
+        schedule(title: result.title, body: result.body, identifier: RequestID.updatesFound)
+    }
+
+    func updatesFoundContent(packages: [BrewPackage], willAutoUpgrade: Bool) -> (title: String, body: String) {
+        let names = packages.map(\.name).joined(separator: ", ")
+        if willAutoUpgrade {
+            return (
+                String(localized: "title_upgrading", table: "Notifications"),
+                String(localized: "body_upgrading \(packages.count) \(names)", table: "Notifications")
+            )
+        } else {
+            return (
+                String(localized: "title_updates_available", table: "Notifications"),
+                String(localized: "body_updates_found \(packages.count) \(names)", table: "Notifications")
+            )
+        }
+    }
+
+    // MARK: - Upgrade Result
+
     /// Post an upgrade result summary notification.
-    func showUpgradeResult(upgraded: [BrewPackage], success: Bool, requestedNames: [String], skippedNames: [String] = [], externalSuccessNames: [String] = []) {
-        let content = UNMutableNotificationContent()
-        let result = upgradeResultContent(upgraded: upgraded, success: success, requestedNames: requestedNames, skippedNames: skippedNames, externalSuccessNames: externalSuccessNames)
-        content.title = result.title
-        content.body = result.body
-        content.sound = .default
-        let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
-        center.add(request)
+    func showUpgradeResult(upgraded: [BrewPackage], success: Bool, requestedNames: [String], skippedNames: [String] = [], externalSuccessNames: [String] = [], failedErrors: [String: String] = [:]) {
+        guard settings?.notifyOnUpgradeResult != false else { return }
+        let result = upgradeResultContent(upgraded: upgraded, success: success, requestedNames: requestedNames, skippedNames: skippedNames, externalSuccessNames: externalSuccessNames, failedErrors: failedErrors)
+        schedule(title: result.title, body: result.body, identifier: UUID().uuidString)
     }
 
     /// Build the title and body for an upgrade result notification.
@@ -89,131 +139,179 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate, Not
         success: Bool,
         requestedNames: [String],
         skippedNames: [String],
-        externalSuccessNames: [String]
+        externalSuccessNames: [String],
+        failedErrors: [String: String] = [:]
     ) -> (title: String, body: String) {
         // Deduplicate: exclude packages already upgraded externally
         let externalNamesSet = Set(externalSuccessNames)
         let filteredUpgraded = upgraded.filter { !externalNamesSet.contains($0.name) }
 
-        let upgradedNamesSet = Set(filteredUpgraded.map { $0.name })
+        let upgradedNamesSet = Set(filteredUpgraded.map(\.name))
         let skippedNamesSet = Set(skippedNames)
         let failedNames = requestedNames.filter {
             !upgradedNamesSet.contains($0) &&
-            !externalNamesSet.contains($0) &&
-            !skippedNamesSet.contains($0)
+                !externalNamesSet.contains($0) &&
+                !skippedNamesSet.contains($0)
         }
 
-        if filteredUpgraded.isEmpty && externalSuccessNames.isEmpty && skippedNames.isEmpty {
-            if !success && !failedNames.isEmpty {
-                return (
-                    String(localized: "title_upgrade_failed", table: "Notifications"),
-                    String(localized: "body_upgrade_failed \(failedNames.joined(separator: ", "))", table: "Notifications")
-                )
-            } else {
-                return (
-                    String(localized: "title_brew_ready", table: "Notifications"),
-                    String(localized: "body_brew_ready", table: "Notifications")
-                )
-            }
+        if filteredUpgraded.isEmpty, externalSuccessNames.isEmpty, skippedNames.isEmpty, failedNames.isEmpty {
+            return (
+                String(localized: "title_brew_ready", table: "Notifications"),
+                String(localized: "body_brew_ready", table: "Notifications")
+            )
+        }
+
+        let title = if success {
+            String(localized: "title_brew_updated", table: "Notifications")
+        } else if filteredUpgraded.isEmpty, externalSuccessNames.isEmpty, skippedNames.isEmpty {
+            String(localized: "title_upgrade_failed", table: "Notifications")
         } else {
-            let title = success
-                ? String(localized: "title_brew_updated", table: "Notifications")
-                : String(localized: "title_partial_upgrade", table: "Notifications")
-
-            // Emoji legend — ✅: success, ℹ️: externally synced, ⏭️: skipped, ❌: failed
-            var lines: [String] = []
-            for pkg in filteredUpgraded {
-                lines.append(String(localized: "line_package_success \(pkg.name) \(pkg.oldVersion) \(pkg.newVersion)", table: "Notifications"))
-            }
-            for name in externalSuccessNames {
-                lines.append(String(localized: "line_package_external \(name)", table: "Notifications"))
-            }
-            for name in skippedNames {
-                lines.append(String(localized: "line_package_skipped \(name)", table: "Notifications"))
-            }
-            if !failedNames.isEmpty {
-                lines.append(String(localized: "line_package_failed \(failedNames.joined(separator: ", "))", table: "Notifications"))
-            }
-
-            return (title, lines.joined(separator: "\n"))
+            String(localized: "title_partial_upgrade", table: "Notifications")
         }
+
+        // Emoji legend — ✅: success, ℹ️: externally synced, ⏭️: skipped, ❌: failed
+        var lines: [String] = []
+        for pkg in filteredUpgraded {
+            lines.append(String(localized: "line_package_success \(pkg.name) \(pkg.oldVersion) \(pkg.newVersion)", table: "Notifications"))
+        }
+        for name in externalSuccessNames {
+            lines.append(String(localized: "line_package_external \(name)", table: "Notifications"))
+        }
+        for name in skippedNames {
+            lines.append(String(localized: "line_package_skipped \(name)", table: "Notifications"))
+        }
+        for name in failedNames {
+            if let reason = failedErrors[name] {
+                lines.append(String(localized: "line_package_failed_reason \(name) \(reason)", table: "Notifications"))
+            } else {
+                lines.append(String(localized: "line_package_failed \(name)", table: "Notifications"))
+            }
+        }
+
+        return (title, lines.joined(separator: "\n"))
     }
 
-    /// Notify the user that updates are available.
-    func showUpdatesFound(packages: [BrewPackage]) {
-        let content = UNMutableNotificationContent()
-        content.title = String(localized: "title_updates_available", table: "Notifications")
-        content.body = String(localized: "body_updates_found \(packages.count) \(packages.map { $0.name }.joined(separator: ", "))", table: "Notifications")
-        content.sound = .default
-
-        let request = UNNotificationRequest(identifier: RequestID.updatesFound, content: content, trigger: nil)
-        center.add(request)
-    }
+    // MARK: - Auth
 
     /// Notify the user that authorization is required.
     func showAuthRequired(packageNames: [String], isRetry: Bool = false) {
-        let content = UNMutableNotificationContent()
-
-        if isRetry {
-            content.title = String(localized: "title_auth_failed", table: "Notifications")
-            content.body = String(localized: "body_auth_failed_retry \(packageNames.joined(separator: ", "))", table: "Notifications")
-        } else {
-            content.title = String(localized: "title_auth_required", table: "Notifications")
-            content.body = String(localized: "body_auth_required \(packageNames.joined(separator: ", "))", table: "Notifications")
-        }
-
-        content.sound = .default
+        guard settings?.notifyOnAuthRequired != false else { return }
+        let result = authRequiredContent(packageNames: packageNames, isRetry: isRetry)
+        let content = buildContent(title: result.title, body: result.body)
         content.categoryIdentifier = Category.authRequired
+        // Retries reuse a fixed ID so each wrong-password banner replaces the previous one
+        let identifier = isRetry ? RequestID.authRetry : RequestID.authTrigger
+        schedule(content: content, identifier: identifier)
+    }
 
-        // Use unique ID for retries so they appear as fresh banners
-        let requestID = isRetry ? RequestID.authRetry() : RequestID.authTrigger
-        let request = UNNotificationRequest(identifier: requestID, content: content, trigger: nil)
-        center.add(request)
+    func authRequiredContent(packageNames: [String], isRetry: Bool) -> (title: String, body: String) {
+        let names = packageNames.joined(separator: ", ")
+        if isRetry {
+            return (
+                String(localized: "title_auth_failed", table: "Notifications"),
+                String(localized: "body_auth_failed_retry \(names)", table: "Notifications")
+            )
+        } else {
+            return (
+                String(localized: "title_auth_required", table: "Notifications"),
+                String(localized: "body_auth_required \(names)", table: "Notifications")
+            )
+        }
     }
 
     /// Notify the user that authorization timed out.
     func showAuthTimeout(packageName: String) {
-        let content = UNMutableNotificationContent()
-        content.title = String(localized: "title_auth_timeout", table: "Notifications")
-        content.body = String(localized: "body_auth_timeout \(packageName)", table: "Notifications")
-        content.sound = .default
-
-        let request = UNNotificationRequest(identifier: RequestID.error(), content: content, trigger: nil)
-        center.add(request)
+        guard settings?.notifyOnAuthRequired != false else { return }
+        let result = authTimeoutContent(packageName: packageName)
+        schedule(title: result.title, body: result.body, identifier: RequestID.error())
     }
+
+    func authTimeoutContent(packageName: String) -> (title: String, body: String) {
+        (
+            String(localized: "title_auth_timeout", table: "Notifications"),
+            String(localized: "body_auth_timeout \(packageName)", table: "Notifications")
+        )
+    }
+
+    // MARK: - Transient Error
 
     /// Post a transient (non-fatal) error notification.
     func showTransientError(error: BrewError, packageName: String? = nil) {
-        let content = UNMutableNotificationContent()
+        guard settings?.notifyOnErrors != false else { return }
+        let result = transientErrorContent(error: error, packageName: packageName)
+        schedule(title: result.title, body: result.body, identifier: RequestID.error())
+    }
 
+    func transientErrorContent(error: BrewError, packageName: String?) -> (title: String, body: String) {
         switch error {
         case .authenticationFailed:
-            content.title = String(localized: "title_auth_failed", table: "Notifications")
             if let name = packageName {
-                content.body = String(localized: "body_transient_auth_failed \(name)", table: "Notifications")
+                (
+                    String(localized: "title_auth_failed", table: "Notifications"),
+                    String(localized: "body_transient_auth_failed \(name)", table: "Notifications")
+                )
             } else {
-                content.body = String(localized: "body_transient_warning \(error.userMessage)", table: "Notifications")
+                (
+                    String(localized: "title_auth_failed", table: "Notifications"),
+                    String(localized: "body_transient_warning \(error.userMessage)", table: "Notifications")
+                )
             }
-        case .userCancelled:
-            content.title = String(localized: "title_operation_cancelled", table: "Notifications")
-            content.body = String(localized: "body_transient_cancelled \(error.userMessage)", table: "Notifications")
+        case .networkUnavailable:
+            (
+                String(localized: "title_network_unavailable", table: "Notifications"),
+                String(localized: "body_transient_warning \(error.userMessage)", table: "Notifications")
+            )
         default:
-            content.title = String(localized: "title_command_failed", table: "Notifications")
-            content.body = String(localized: "body_transient_error \(error.userMessage)", table: "Notifications")
+            (
+                String(localized: "title_command_failed", table: "Notifications"),
+                String(localized: "body_transient_error \(error.userMessage)", table: "Notifications")
+            )
         }
-        content.sound = .default
+    }
 
-        let request = UNNotificationRequest(identifier: RequestID.error(), content: content, trigger: nil)
+    // MARK: - Brew Not Found
+
+    /// Notify the user that Homebrew could not be found (fatal error).
+    func showBrewNotFound() {
+        let result = brewNotFoundContent()
+        schedule(title: result.title, body: result.body, identifier: RequestID.brewNotFound)
+    }
+
+    func brewNotFoundContent() -> (title: String, body: String) {
+        (
+            String(localized: "title_brew_not_found", table: "Notifications"),
+            String(localized: "body_brew_not_found", table: "Notifications")
+        )
+    }
+
+    // MARK: - Private Scheduling Helpers
+
+    private func schedule(title: String, body: String, identifier: String) {
+        let content = buildContent(title: title, body: body)
+        schedule(content: content, identifier: identifier)
+    }
+
+    private func buildContent(title: String, body: String) -> UNMutableNotificationContent {
+        let content = UNMutableNotificationContent()
+        content.title = title
+        content.body = body
+        content.sound = .default
+        return content
+    }
+
+    private func schedule(content: UNMutableNotificationContent, identifier: String) {
+        let request = UNNotificationRequest(identifier: identifier, content: content, trigger: nil)
+        onRequestScheduled?(request)
         center.add(request)
     }
 
     // MARK: - UNUserNotificationCenterDelegate
 
-    func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+    func userNotificationCenter(_: UNUserNotificationCenter, willPresent _: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
         completionHandler([.banner, .sound])
     }
 
-    func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
+    func userNotificationCenter(_: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
         if response.actionIdentifier == Action.authorize {
             Task { @MainActor in
                 self.onAuthorizeActionTapped?()

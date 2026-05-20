@@ -2,7 +2,7 @@ import Foundation
 
 /// Distributed notification name constants (shared between main App and AskPass Helper).
 enum BrewMenuNotification {
-    static let helperStarted  = Notification.Name("com.whoami.brewmenu.helper.started")
+    static let helperStarted = Notification.Name("com.whoami.brewmenu.helper.started")
     static let helperFinished = Notification.Name("com.whoami.brewmenu.helper.finished")
 
     /// Generate a PID-specific trigger notification name.
