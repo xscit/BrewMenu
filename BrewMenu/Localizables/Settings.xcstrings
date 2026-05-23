@@ -491,7 +491,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Notify when a network or command error occurs during a scan or upgrade"
+            "value" : "Notify when a network or command error occurs during a scan"
           }
         }
       }
